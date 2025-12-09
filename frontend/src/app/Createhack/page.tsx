@@ -4,19 +4,16 @@ import Image from "next/image";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format } from "date-fns";
 import axios from "axios";
+import { prepareContractCall } from "thirdweb";
+import { TransactionButton } from "thirdweb/react";
+import { mainContract } from "@/app/constants/contracts";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Upload,
   X,
@@ -26,8 +23,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Menu,
-  CalendarIcon,
 } from "lucide-react";
+import { useHackathonFormStore } from "@/store/useHackathonFormStore";
 
 const formSchema = z.object({
   hackathonName: z.string().optional(),
@@ -75,12 +72,24 @@ const steps = [
 ];
 
 const CreateHackathonForm = () => {
-  const [step, setStep] = useState(1);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  // Zustand store
+  const {
+    formData: storedFormData,
+    step,
+    imagePreview,
+    transactionData,
+    isUploading,
+    uploadProgress,
+    uploadStatus,
+    setFormData,
+    setImagePreview,
+    setStep,
+    setTransactionData,
+    setUploadState,
+    resetForm,
+  } = useHackathonFormStore();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<string>("");
 
   const {
     control,
@@ -92,19 +101,7 @@ const CreateHackathonForm = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
-    defaultValues: {
-      hackathonName: "",
-      description: "",
-      judges: ["", "", "", "", ""],
-      sponsorshipEndTime: "",
-      hackathonStartTime: "",
-      hackathonEndTime: "",
-      stakeAmount: "",
-      minTeamMembers: "",
-      maxTeamMembers: "",
-      minSponsorshipThreshold: "",
-      eventTimeline: [{ eventName: "", eventDate: "", eventDescription: "" }],
-    },
+    defaultValues: storedFormData,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -123,18 +120,35 @@ const CreateHackathonForm = () => {
 
   const watchAllFields = watch();
 
-  // Debug: Check API key on mount
+  // Restore stored form data from Zustand on mount only
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
-    console.log(
-      "🔑 API Key check:",
-      apiKey ? `Found: ${apiKey.substring(0, 10)}...` : "❌ NOT FOUND!"
-    );
-    console.log(
-      "📋 All env vars:",
-      Object.keys(process.env).filter((k) => k.includes("LIGHTHOUSE"))
-    );
+    console.log("🔄 Restoring form data from Zustand:", storedFormData);
+    if (storedFormData && Object.keys(storedFormData).length > 0) {
+      Object.entries(storedFormData).forEach(([key, value]) => {
+        if (value !== undefined && value !== "" && key !== "hackathonImage") {
+          console.log(`  Setting ${key}:`, value);
+          setValue(key as keyof FormData, value, {
+            shouldValidate: false,
+            shouldDirty: false,
+          });
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync form changes to Zustand store with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const subscription = watch((data) => {
+        console.log("📝 Syncing form data to Zustand:", data);
+        setFormData(data as FormData);
+      });
+      return () => subscription.unsubscribe();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [watch, setFormData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -185,19 +199,21 @@ const CreateHackathonForm = () => {
   const nextStep = async () => {
     const isValid = await validateCurrentStep();
     if (isValid) {
-      setStep((prev) => Math.min(prev + 1, 5));
+      setStep(Math.min(step + 1, 5));
     }
   };
 
   const prevStep = () => {
-    setStep((prev) => Math.max(prev - 1, 1));
+    setStep(Math.max(step - 1, 1));
   };
 
   const onSubmit = async (data: FormData) => {
     console.log("🎯 onSubmit called! Form data:", data);
-    setIsUploading(true);
-    setUploadProgress(0);
-    setUploadStatus("Initializing upload...");
+    setUploadState({
+      isUploading: true,
+      uploadProgress: 0,
+      uploadStatus: "Initializing upload...",
+    });
 
     try {
       console.log("============================================");
@@ -217,7 +233,7 @@ const CreateHackathonForm = () => {
 
       // Step 1: Upload Image to IPFS via Pinata
       console.log("📤 Step 1: Uploading image to IPFS via Pinata...");
-      setUploadStatus("Uploading image to IPFS...");
+      setUploadState({ uploadStatus: "Uploading image to IPFS..." });
 
       const imageFiles = data.hackathonImage;
 
@@ -250,7 +266,7 @@ const CreateHackathonForm = () => {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / (progressEvent.total || 1)
             );
-            setUploadProgress(percentCompleted);
+            setUploadState({ uploadProgress: percentCompleted });
             console.log(`Image upload progress: ${percentCompleted}%`);
           },
         }
@@ -265,8 +281,10 @@ const CreateHackathonForm = () => {
       console.log("   URL:", imageUrl);
       console.log("");
 
-      setUploadProgress(0);
-      setUploadStatus("Creating metadata...");
+      setUploadState({
+        uploadProgress: 0,
+        uploadStatus: "Creating metadata...",
+      });
 
       // Step 2: Create metadata JSON with description, eventTimeline, and image reference
       console.log("📦 Step 2: Creating metadata JSON...");
@@ -282,7 +300,7 @@ const CreateHackathonForm = () => {
 
       // Step 3: Upload metadata JSON to IPFS via Pinata
       console.log("📤 Step 3: Uploading metadata to IPFS via Pinata...");
-      setUploadStatus("Uploading metadata to IPFS...");
+      setUploadState({ uploadStatus: "Uploading metadata to IPFS..." });
 
       const metadataBlob = new Blob([JSON.stringify(metadata)], {
         type: "application/json",
@@ -320,14 +338,14 @@ const CreateHackathonForm = () => {
       console.log("   URL:", metadataUrl);
       console.log("");
 
-      setUploadStatus("Preparing on-chain data...");
+      setUploadState({ uploadStatus: "Preparing on-chain data..." });
 
       // Step 4: Prepare on-chain data
       console.log("⛓️  Step 4: Preparing on-chain data...");
       const onChainData = {
         hackathonName: data.hackathonName,
         metadataHash: metadataHash, // This is the IPFS hash containing description, eventTimeline, and image
-        judges: data.judges.filter((judge) => judge !== ""),
+        judges: data.judges?.filter((judge) => judge !== "") || [],
         sponsorshipEndTime: data.sponsorshipEndTime,
         hackathonStartTime: data.hackathonStartTime,
         hackathonEndTime: data.hackathonEndTime,
@@ -366,15 +384,24 @@ const CreateHackathonForm = () => {
       console.log("📅 TIMELINE:");
       console.log(
         "  Sponsorship Deadline:",
-        new Date(data.sponsorshipEndTime).toLocaleString()
+        (() => {
+          const d = new Date(data.sponsorshipEndTime);
+          return !isNaN(d.getTime()) ? d.toLocaleString() : "Invalid date";
+        })()
       );
       console.log(
         "  Hackathon Start:",
-        new Date(data.hackathonStartTime).toLocaleString()
+        (() => {
+          const d = new Date(data.hackathonStartTime);
+          return !isNaN(d.getTime()) ? d.toLocaleString() : "Invalid date";
+        })()
       );
       console.log(
         "  Hackathon End:",
-        new Date(data.hackathonEndTime).toLocaleString()
+        (() => {
+          const d = new Date(data.hackathonEndTime);
+          return !isNaN(d.getTime()) ? d.toLocaleString() : "Invalid date";
+        })()
       );
       console.log("");
 
@@ -398,48 +425,116 @@ const CreateHackathonForm = () => {
       console.log("✅ READY TO SEND TO SMART CONTRACT");
       console.log("============================================");
 
-      setUploadStatus("Upload complete!");
+      setUploadState({ uploadStatus: "Preparing blockchain transaction..." });
 
-      alert(
-        `✅ Hackathon data prepared successfully!\n\n` +
-          `📦 IPFS Metadata Hash:\n${metadataHash}\n\n` +
-          `🖼️ Image Hash:\n${imageHash}\n\n` +
-          `View image at:\n${imageUrl}\n\n` +
-          `Check console for full details.`
+      // Step 5: Prepare blockchain transaction data
+      console.log("⛓️  Step 5: Creating blockchain transaction...");
+
+      // Convert times to Unix timestamps (seconds)
+      const sponsorshipEndDate = data.sponsorshipEndTime
+        ? new Date(data.sponsorshipEndTime)
+        : null;
+      const sponsorshipEndTimestamp =
+        sponsorshipEndDate && !isNaN(sponsorshipEndDate.getTime())
+          ? Math.floor(sponsorshipEndDate.getTime() / 1000)
+          : Math.floor(Date.now() / 1000);
+
+      const hackathonStartDate = data.hackathonStartTime
+        ? new Date(data.hackathonStartTime)
+        : null;
+      const hackathonStartTimestamp =
+        hackathonStartDate && !isNaN(hackathonStartDate.getTime())
+          ? Math.floor(hackathonStartDate.getTime() / 1000)
+          : Math.floor(Date.now() / 1000);
+
+      const hackathonEndDate = data.hackathonEndTime
+        ? new Date(data.hackathonEndTime)
+        : null;
+      const hackathonEndTimestamp =
+        hackathonEndDate && !isNaN(hackathonEndDate.getTime())
+          ? Math.floor(hackathonEndDate.getTime() / 1000)
+          : Math.floor(Date.now() / 1000);
+
+      // Filter out empty judge addresses
+      const validJudges = data.judges?.filter((judge) => judge !== "") || [];
+
+      // Convert ETH amounts to Wei (multiply by 10^18)
+      const stakeAmountWei = BigInt(
+        Math.floor(parseFloat(data.stakeAmount || "0") * 1e18)
+      );
+      const minSponsorshipThresholdWei = BigInt(
+        Math.floor(parseFloat(data.minSponsorshipThreshold || "0") * 1e18)
+      );
+
+      // Hosting fee (0.1 ETH in Wei)
+      const hostingFeeWei = BigInt(Math.floor(0.1 * 1e18));
+
+      console.log("Transaction parameters:");
+      console.log("  Metadata URI:", metadataUrl);
+      console.log("  Judges:", validJudges);
+      console.log("  Sponsorship End:", sponsorshipEndTimestamp);
+      console.log("  Hackathon Start:", hackathonStartTimestamp);
+      console.log("  Hackathon End:", hackathonEndTimestamp);
+      console.log("  Stake Amount (Wei):", stakeAmountWei.toString());
+      console.log("  Min Team Members:", parseInt(data.minTeamMembers || "0"));
+      console.log("  Max Team Members:", parseInt(data.maxTeamMembers || "0"));
+      console.log(
+        "  Min Sponsorship Threshold (Wei):",
+        minSponsorshipThresholdWei.toString()
+      );
+      console.log("  Hosting Fee (Wei):", hostingFeeWei.toString());
+      console.log("");
+
+      // Store transaction data for TransactionButton
+      setTransactionData({
+        metadataUrl,
+        validJudges,
+        sponsorshipEndTimestamp,
+        hackathonStartTimestamp,
+        hackathonEndTimestamp,
+        stakeAmountWei,
+        minTeamMembers: parseInt(data.minTeamMembers || "0"),
+        maxTeamMembers: parseInt(data.maxTeamMembers || "0"),
+        minSponsorshipThresholdWei,
+        hostingFeeWei,
+        metadataHash,
+        imageHash,
+        imageUrl,
+      });
+
+      setUploadState({ uploadStatus: "Ready to submit transaction!" });
+      toast.success(
+        "Metadata uploaded successfully! Ready to create hackathon on blockchain."
       );
     } catch (error) {
       console.error("❌ Error during upload:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
 
-      setUploadStatus(`Error: ${errorMessage}`);
-
-      alert(
-        `❌ Upload failed!\n\nError: ${errorMessage}\n\n` +
-          `Common issues:\n` +
-          `1. Check if NEXT_PUBLIC_LIGHTHOUSE_API_KEY is set in .env\n` +
-          `2. Restart dev server after changing .env\n` +
-          `3. Check internet connection\n` +
-          `4. Verify API key is valid\n\n` +
-          `Check console for details.`
-      );
+      setUploadState({ uploadStatus: `Error: ${errorMessage}` });
+      toast.error(`Upload failed: ${errorMessage}`);
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      setTimeout(() => setUploadStatus(""), 3000);
+      setUploadState({ isUploading: false, uploadProgress: 0 });
+      setTimeout(() => setUploadState({ uploadStatus: "" }), 3000);
     }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onError = (errors: Record<string, any>) => {
     console.error("❌ Form validation failed:", errors);
-    alert(
-      `Form validation failed!\n\n` +
-        `Please check all required fields:\n` +
-        Object.keys(errors)
-          .map((key) => `- ${key}: ${errors[key]?.message || "Invalid"}`)
-          .join("\n")
-    );
+    toast.error("Please check all required fields");
+  };
+
+  // Clear form data after successful transaction
+  const handleTransactionSuccess = () => {
+    toast.success("Hackathon created successfully!");
+    resetForm();
+    setTransactionData(null);
+    // Optionally redirect to hackathon page
+  };
+
+  const handleTransactionError = (error: Error) => {
+    toast.error("Transaction failed: " + error.message);
   };
 
   const renderStepContent = () => {
@@ -709,97 +804,55 @@ const CreateHackathonForm = () => {
                       Sponsorship Deadline{" "}
                       <span className="text-destructive">*</span>
                     </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full h-12 justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(new Date(field.value), "PPP p")
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Pick date and time
-                            </span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                          onSelect={(date) => {
-                            if (date) {
-                              const hours = field.value
-                                ? new Date(field.value).getHours()
-                                : 12;
-                              const minutes = field.value
-                                ? new Date(field.value).getMinutes()
-                                : 0;
-                              date.setHours(hours, minutes);
-                              field.onChange(date.toISOString());
-                            }
-                          }}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Label className="text-xs text-muted-foreground mb-2 block">
-                            Time
-                          </Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              placeholder="HH"
-                              min="0"
-                              max="23"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getHours()
-                                  : ""
+                    <Input
+                      type="datetime-local"
+                      id="sponsorshipEndTime"
+                      value={
+                        field.value
+                          ? (() => {
+                              const d = new Date(field.value);
+                              if (!isNaN(d.getTime())) {
+                                const year = d.getFullYear();
+                                const month = String(d.getMonth() + 1).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const day = String(d.getDate()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const hours = String(d.getHours()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const minutes = String(d.getMinutes()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                return `${year}-${month}-${day}T${hours}:${minutes}`;
                               }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setHours(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                            <span className="flex items-center">:</span>
-                            <Input
-                              type="number"
-                              placeholder="MM"
-                              min="0"
-                              max="59"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getMinutes()
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setMinutes(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                              return "";
+                            })()
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          const date = new Date(value);
+                          field.onChange(date.toISOString());
+                        } else {
+                          field.onChange("");
+                        }
+                      }}
+                      className="w-full h-12"
+                    />
                     <p className="text-xs text-muted-foreground">
                       When sponsors must commit funding
                     </p>
                     {errors.sponsorshipEndTime && (
                       <div className="flex items-center gap-2 text-destructive text-sm">
                         <AlertCircle className="w-4 h-4" />
-                        <span>{errors.sponsorshipEndTime.message}</span>
+                        <span>{String(errors.sponsorshipEndTime.message)}</span>
                       </div>
                     )}
                   </div>
@@ -825,97 +878,55 @@ const CreateHackathonForm = () => {
                       Hackathon Start Time{" "}
                       <span className="text-destructive">*</span>
                     </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full h-12 justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(new Date(field.value), "PPP p")
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Pick date and time
-                            </span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                          onSelect={(date) => {
-                            if (date) {
-                              const hours = field.value
-                                ? new Date(field.value).getHours()
-                                : 12;
-                              const minutes = field.value
-                                ? new Date(field.value).getMinutes()
-                                : 0;
-                              date.setHours(hours, minutes);
-                              field.onChange(date.toISOString());
-                            }
-                          }}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Label className="text-xs text-muted-foreground mb-2 block">
-                            Time
-                          </Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              placeholder="HH"
-                              min="0"
-                              max="23"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getHours()
-                                  : ""
+                    <Input
+                      type="datetime-local"
+                      id="hackathonStartTime"
+                      value={
+                        field.value
+                          ? (() => {
+                              const d = new Date(field.value);
+                              if (!isNaN(d.getTime())) {
+                                const year = d.getFullYear();
+                                const month = String(d.getMonth() + 1).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const day = String(d.getDate()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const hours = String(d.getHours()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const minutes = String(d.getMinutes()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                return `${year}-${month}-${day}T${hours}:${minutes}`;
                               }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setHours(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                            <span className="flex items-center">:</span>
-                            <Input
-                              type="number"
-                              placeholder="MM"
-                              min="0"
-                              max="59"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getMinutes()
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setMinutes(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                              return "";
+                            })()
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          const date = new Date(value);
+                          field.onChange(date.toISOString());
+                        } else {
+                          field.onChange("");
+                        }
+                      }}
+                      className="w-full h-12"
+                    />
                     <p className="text-xs text-muted-foreground">
                       When participants begin building
                     </p>
                     {errors.hackathonStartTime && (
                       <div className="flex items-center gap-2 text-destructive text-sm">
                         <AlertCircle className="w-4 h-4" />
-                        <span>{errors.hackathonStartTime.message}</span>
+                        <span>{String(errors.hackathonStartTime.message)}</span>
                       </div>
                     )}
                   </div>
@@ -941,97 +952,55 @@ const CreateHackathonForm = () => {
                       Hackathon End Time{" "}
                       <span className="text-destructive">*</span>
                     </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full h-12 justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(new Date(field.value), "PPP p")
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Pick date and time
-                            </span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                          onSelect={(date) => {
-                            if (date) {
-                              const hours = field.value
-                                ? new Date(field.value).getHours()
-                                : 12;
-                              const minutes = field.value
-                                ? new Date(field.value).getMinutes()
-                                : 0;
-                              date.setHours(hours, minutes);
-                              field.onChange(date.toISOString());
-                            }
-                          }}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Label className="text-xs text-muted-foreground mb-2 block">
-                            Time
-                          </Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              placeholder="HH"
-                              min="0"
-                              max="23"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getHours()
-                                  : ""
+                    <Input
+                      type="datetime-local"
+                      id="hackathonEndTime"
+                      value={
+                        field.value
+                          ? (() => {
+                              const d = new Date(field.value);
+                              if (!isNaN(d.getTime())) {
+                                const year = d.getFullYear();
+                                const month = String(d.getMonth() + 1).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const day = String(d.getDate()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const hours = String(d.getHours()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                const minutes = String(d.getMinutes()).padStart(
+                                  2,
+                                  "0"
+                                );
+                                return `${year}-${month}-${day}T${hours}:${minutes}`;
                               }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setHours(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                            <span className="flex items-center">:</span>
-                            <Input
-                              type="number"
-                              placeholder="MM"
-                              min="0"
-                              max="59"
-                              value={
-                                field.value
-                                  ? new Date(field.value).getMinutes()
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const date = field.value
-                                  ? new Date(field.value)
-                                  : new Date();
-                                date.setMinutes(parseInt(e.target.value) || 0);
-                                field.onChange(date.toISOString());
-                              }}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                              return "";
+                            })()
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          const date = new Date(value);
+                          field.onChange(date.toISOString());
+                        } else {
+                          field.onChange("");
+                        }
+                      }}
+                      className="w-full h-12"
+                    />
                     <p className="text-xs text-muted-foreground">
                       Final submission deadline
                     </p>
                     {errors.hackathonEndTime && (
                       <div className="flex items-center gap-2 text-destructive text-sm">
                         <AlertCircle className="w-4 h-4" />
-                        <span>{errors.hackathonEndTime.message}</span>
+                        <span>{String(errors.hackathonEndTime.message)}</span>
                       </div>
                     )}
                   </div>
@@ -1049,22 +1018,40 @@ const CreateHackathonForm = () => {
                   <div className="space-y-1 text-xs text-muted-foreground">
                     <p>
                       Duration:{" "}
-                      {Math.ceil(
-                        (new Date(watchAllFields.hackathonEndTime).getTime() -
-                          new Date(
-                            watchAllFields.hackathonStartTime
-                          ).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{" "}
+                      {(() => {
+                        const endDate = new Date(
+                          watchAllFields.hackathonEndTime
+                        );
+                        const startDate = new Date(
+                          watchAllFields.hackathonStartTime
+                        );
+                        if (
+                          !isNaN(endDate.getTime()) &&
+                          !isNaN(startDate.getTime())
+                        ) {
+                          return Math.ceil(
+                            (endDate.getTime() - startDate.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          );
+                        }
+                        return 0;
+                      })()}{" "}
                       days
                     </p>
                     <p>
                       Sponsorship window:{" "}
-                      {Math.ceil(
-                        (new Date(watchAllFields.sponsorshipEndTime).getTime() -
-                          Date.now()) /
-                          (1000 * 60 * 60 * 24)
-                      )}{" "}
+                      {(() => {
+                        const endDate = new Date(
+                          watchAllFields.sponsorshipEndTime
+                        );
+                        if (!isNaN(endDate.getTime())) {
+                          return Math.ceil(
+                            (endDate.getTime() - Date.now()) /
+                              (1000 * 60 * 60 * 24)
+                          );
+                        }
+                        return 0;
+                      })()}{" "}
                       days from now
                     </p>
                   </div>
@@ -1316,101 +1303,44 @@ const CreateHackathonForm = () => {
                                 Date & Time{" "}
                                 <span className="text-destructive">*</span>
                               </Label>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className="w-full h-11 justify-start text-left font-normal"
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? (
-                                      format(new Date(field.value), "PPP p")
-                                    ) : (
-                                      <span className="text-muted-foreground">
-                                        Pick date and time
-                                      </span>
-                                    )}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  className="w-auto p-0"
-                                  align="start"
-                                >
-                                  <Calendar
-                                    mode="single"
-                                    selected={
-                                      field.value
-                                        ? new Date(field.value)
-                                        : undefined
-                                    }
-                                    onSelect={(date) => {
-                                      if (date) {
-                                        const hours = field.value
-                                          ? new Date(field.value).getHours()
-                                          : 12;
-                                        const minutes = field.value
-                                          ? new Date(field.value).getMinutes()
-                                          : 0;
-                                        date.setHours(hours, minutes);
-                                        field.onChange(date.toISOString());
-                                      }
-                                    }}
-                                    initialFocus
-                                  />
-                                  <div className="p-3 border-t">
-                                    <Label className="text-xs text-muted-foreground mb-2 block">
-                                      Time
-                                    </Label>
-                                    <div className="flex gap-2">
-                                      <Input
-                                        type="number"
-                                        placeholder="HH"
-                                        min="0"
-                                        max="23"
-                                        value={
-                                          field.value
-                                            ? new Date(field.value).getHours()
-                                            : ""
+                              <Input
+                                type="datetime-local"
+                                id={`eventDate-${index}`}
+                                value={
+                                  field.value
+                                    ? (() => {
+                                        const d = new Date(field.value);
+                                        if (!isNaN(d.getTime())) {
+                                          const year = d.getFullYear();
+                                          const month = String(
+                                            d.getMonth() + 1
+                                          ).padStart(2, "0");
+                                          const day = String(
+                                            d.getDate()
+                                          ).padStart(2, "0");
+                                          const hours = String(
+                                            d.getHours()
+                                          ).padStart(2, "0");
+                                          const minutes = String(
+                                            d.getMinutes()
+                                          ).padStart(2, "0");
+                                          return `${year}-${month}-${day}T${hours}:${minutes}`;
                                         }
-                                        onChange={(e) => {
-                                          const date = field.value
-                                            ? new Date(field.value)
-                                            : new Date();
-                                          date.setHours(
-                                            parseInt(e.target.value) || 0
-                                          );
-                                          field.onChange(date.toISOString());
-                                        }}
-                                        className="h-9"
-                                      />
-                                      <span className="flex items-center">
-                                        :
-                                      </span>
-                                      <Input
-                                        type="number"
-                                        placeholder="MM"
-                                        min="0"
-                                        max="59"
-                                        value={
-                                          field.value
-                                            ? new Date(field.value).getMinutes()
-                                            : ""
-                                        }
-                                        onChange={(e) => {
-                                          const date = field.value
-                                            ? new Date(field.value)
-                                            : new Date();
-                                          date.setMinutes(
-                                            parseInt(e.target.value) || 0
-                                          );
-                                          field.onChange(date.toISOString());
-                                        }}
-                                        className="h-9"
-                                      />
-                                    </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
+                                        return "";
+                                      })()
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value) {
+                                    const date = new Date(value);
+                                    field.onChange(date.toISOString());
+                                  } else {
+                                    field.onChange("");
+                                  }
+                                }}
+                                className="w-full h-11"
+                              />
                               {errors.eventTimeline?.[index]?.eventDate && (
                                 <div className="flex items-center gap-2 text-destructive text-xs">
                                   <AlertCircle className="w-3 h-3" />
@@ -1569,9 +1499,12 @@ const CreateHackathonForm = () => {
                       Sponsorship Deadline
                     </p>
                     <p className="font-semibold">
-                      {new Date(
-                        watchAllFields.sponsorshipEndTime
-                      ).toLocaleString()}
+                      {(() => {
+                        const d = new Date(watchAllFields.sponsorshipEndTime);
+                        return !isNaN(d.getTime())
+                          ? d.toLocaleString()
+                          : "Invalid date";
+                      })()}
                     </p>
                   </div>
                   <div>
@@ -1579,9 +1512,12 @@ const CreateHackathonForm = () => {
                       Hackathon Start
                     </p>
                     <p className="font-semibold">
-                      {new Date(
-                        watchAllFields.hackathonStartTime
-                      ).toLocaleString()}
+                      {(() => {
+                        const d = new Date(watchAllFields.hackathonStartTime);
+                        return !isNaN(d.getTime())
+                          ? d.toLocaleString()
+                          : "Invalid date";
+                      })()}
                     </p>
                   </div>
                   <div>
@@ -1589,9 +1525,12 @@ const CreateHackathonForm = () => {
                       Hackathon End
                     </p>
                     <p className="font-semibold">
-                      {new Date(
-                        watchAllFields.hackathonEndTime
-                      ).toLocaleString()}
+                      {(() => {
+                        const d = new Date(watchAllFields.hackathonEndTime);
+                        return !isNaN(d.getTime())
+                          ? d.toLocaleString()
+                          : "Invalid date";
+                      })()}
                     </p>
                   </div>
                 </CardContent>
@@ -1649,7 +1588,12 @@ const CreateHackathonForm = () => {
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
                               {event.eventDate
-                                ? new Date(event.eventDate).toLocaleString()
+                                ? (() => {
+                                    const d = new Date(event.eventDate);
+                                    return !isNaN(d.getTime())
+                                      ? d.toLocaleString()
+                                      : "Invalid date";
+                                  })()
                                 : "No date set"}
                             </p>
                             <p className="text-sm text-foreground">
@@ -1885,6 +1829,34 @@ const CreateHackathonForm = () => {
                       Continue
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
+                  ) : transactionData ? (
+                    <TransactionButton
+                      transaction={() =>
+                        prepareContractCall({
+                          contract: mainContract,
+                          method:
+                            "function createHackathon(string metadataURI, address[] judges, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 minSponsorshipThreshold) payable returns (uint256)",
+                          params: [
+                            transactionData.metadataUrl,
+                            transactionData.validJudges,
+                            BigInt(transactionData.sponsorshipEndTimestamp),
+                            BigInt(transactionData.hackathonStartTimestamp),
+                            BigInt(transactionData.hackathonEndTimestamp),
+                            transactionData.stakeAmountWei,
+                            transactionData.minTeamMembers,
+                            transactionData.maxTeamMembers,
+                            transactionData.minSponsorshipThresholdWei,
+                          ],
+                          value: transactionData.hostingFeeWei,
+                        })
+                      }
+                      onTransactionConfirmed={() => handleTransactionSuccess()}
+                      onError={(error) => handleTransactionError(error)}
+                      className="h-11 px-8 w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Create Hackathon on Blockchain
+                      <Check className="w-4 h-4 ml-2" />
+                    </TransactionButton>
                   ) : (
                     <Button
                       type="submit"
@@ -1899,7 +1871,7 @@ const CreateHackathonForm = () => {
                         </>
                       ) : (
                         <>
-                          Create Hackathon
+                          Prepare Metadata
                           <Check className="w-4 h-4 ml-2" />
                         </>
                       )}

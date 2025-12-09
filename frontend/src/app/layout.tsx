@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ModeToggle } from "@/components/ModeToggle";
+import Navbar from "@/components/Navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "HACKX - Fully Decentralized Hackathon Platform",
-  description: "Build. Compete. Win. On-Chain. Everything from sponsorships, team registrations, project submissions, judging, voting, to prize distribution happens on-chain.",
+  description:
+    "Build. Compete. Win. On-Chain. Everything from sponsorships, team registrations, project submissions, judging, voting, to prize distribution happens on-chain.",
 };
 
 export default function RootLayout({
@@ -38,10 +40,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <div className="fixed bottom-4 right-4 z-50">
-              <ModeToggle />
-            </div>
+            <Navbar />
+            <div className="pt-16">{children}</div>
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
