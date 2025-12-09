@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { readContract } from "thirdweb";
 import { useRouter } from "next/navigation";
+import { Calendar, Users, Coins, Trophy, ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Hackathon {
   id: bigint;
@@ -45,7 +47,7 @@ const HackathonDisplayPage = () => {
 
   useEffect(() => {
     const fetchHackathons = async () => {
-      if (!hackathonCount || hackathonCount === 0n) return;
+      if (!hackathonCount || hackathonCount === BigInt(0)) return;
 
       setIsLoadingHackathons(true);
       const count = Number(hackathonCount);
@@ -105,7 +107,7 @@ const HackathonDisplayPage = () => {
 
   if (isCountPending) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg text-muted-foreground">
@@ -116,12 +118,13 @@ const HackathonDisplayPage = () => {
     );
   }
 
-  if (hackathonCount === 0n) {
+  if (hackathonCount === BigInt(0)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">No Hackathons Yet</h2>
-          <p className="text-muted-foreground">
+          <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-2 text-white">No Hackathons Yet</h2>
+          <p className="text-muted-foreground text-lg">
             Be the first to create a hackathon!
           </p>
         </div>
@@ -130,126 +133,173 @@ const HackathonDisplayPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Active Hackathons</h1>
-        <p className="text-muted-foreground">
-          Total: {hackathonCount?.toString()} hackathon(s)
-        </p>
-      </div>
-
-      {isLoadingHackathons && (
-        <div className="mb-8">
-          <div className="w-full bg-secondary rounded-full h-2.5">
-            <div
-              className="bg-primary h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${loadingProgress}%` }}
-            ></div>
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Enhanced Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-1 w-12 bg-primary"></div>
+            <span className="text-primary text-sm font-semibold uppercase tracking-wider">
+              Active Hackathons
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-2 text-center">
-            Loading hackathons... {Math.round(loadingProgress)}%
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            Discover & Compete
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            {hackathonCount?.toString()} active hackathon{hackathonCount !== BigInt(1) ? 's' : ''} ready for you
           </p>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {hackathons.map((hackathon, index) => (
-          <Card
-            key={index}
-            className="flex flex-col hover:shadow-lg transition-shadow"
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Hackathon #{hackathon.id.toString()}</span>
-                {hackathon.finalized && (
-                  <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">
-                    Finalized
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription className="text-xs truncate">
-                Organizer: {hackathon.organizer}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  Sponsorship Period
-                </p>
-                <p className="text-sm">
-                  {formatDate(hackathon.sponsorshipStart)} -{" "}
-                  {formatDate(hackathon.sponsorshipEnd)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground">
-                  Hackathon Period
-                </p>
-                <p className="text-sm">
-                  {formatDate(hackathon.hackStart)} -{" "}
-                  {formatDate(hackathon.hackEnd)}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">Teams</p>
-                  <p className="text-sm font-medium">
-                    {hackathon.minTeams} - {hackathon.maxTeams}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Stake Amount</p>
-                  <p className="text-sm font-medium">
-                    {formatEther(hackathon.stakeAmount)} ETH
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Total Sponsorship
-                </p>
-                <p className="text-lg font-bold text-primary">
-                  {formatEther(hackathon.totalSponsorshipAmount)} ETH
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Min: {formatEther(hackathon.minSponsorshipThreshold)} ETH
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <button className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                View Details
-              </button>
-            </CardFooter>
-          </Card>
-        ))}
+        {isLoadingHackathons && (
+          <div className="mb-12">
+            <div className="w-full bg-muted/20 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-primary to-primary/60 h-3 rounded-full transition-all duration-300 shadow-lg shadow-primary/20"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3 text-center">
+              Loading hackathons... {Math.round(loadingProgress)}%
+            </p>
+          </div>
+        )}
 
-        {isLoadingHackathons &&
-          Array.from({
-            length: Number(hackathonCount) - hackathons.length,
-          }).map((_, index) => (
-            <Card
-              key={`skeleton-${index}`}
-              className="flex flex-col animate-pulse"
-            >
-              <CardHeader>
-                <div className="h-6 bg-secondary rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-secondary rounded w-full"></div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="h-4 bg-secondary rounded w-full"></div>
-                <div className="h-4 bg-secondary rounded w-5/6"></div>
-                <div className="h-4 bg-secondary rounded w-4/6"></div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-12 bg-secondary rounded"></div>
-                  <div className="h-12 bg-secondary rounded"></div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <div className="h-10 bg-secondary rounded w-full"></div>
-              </CardFooter>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hackathons.map((hackathon, index) => {
+            const isActive = Number(hackathon.hackStart) * 1000 <= Date.now() && Number(hackathon.hackEnd) * 1000 >= Date.now();
+            
+            return (
+              <Card
+                key={index}
+                className="group flex flex-col bg-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 overflow-hidden"
+              >
+                {/* Card Header with Gradient */}
+                <CardHeader className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b border-border/50 pb-3 pt-4 px-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg font-bold text-white mb-0.5">
+                        Hackathon #{hackathon.id.toString()}
+                      </CardTitle>
+                      <CardDescription className="text-[10px] text-muted-foreground truncate">
+                        {hackathon.organizer.slice(0, 6)}...{hackathon.organizer.slice(-4)}
+                      </CardDescription>
+                    </div>
+                    {hackathon.finalized ? (
+                      <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                        Finalized
+                      </span>
+                    ) : isActive ? (
+                      <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-medium animate-pulse flex-shrink-0">
+                        Active
+                      </span>
+                    ) : null}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="flex-grow space-y-2.5 pt-3 px-4">
+                  {/* Sponsorship Period */}
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/10 border border-border/30">
+                    <Calendar className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                        Sponsorship
+                      </p>
+                      <p className="text-xs text-white font-medium leading-tight">
+                        {formatDate(hackathon.sponsorshipStart)} - {formatDate(hackathon.sponsorshipEnd)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Hackathon Period */}
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/10 border border-border/30">
+                    <Trophy className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                        Hackathon
+                      </p>
+                      <p className="text-xs text-white font-medium leading-tight">
+                        {formatDate(hackathon.hackStart)} - {formatDate(hackathon.hackEnd)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Users className="h-3 w-3 text-primary" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Teams</p>
+                      </div>
+                      <p className="text-sm font-bold text-white">
+                        {hackathon.minTeams} - {hackathon.maxTeams}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Coins className="h-3 w-3 text-primary" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Stake</p>
+                      </div>
+                      <p className="text-sm font-bold text-white">
+                        {formatEther(hackathon.stakeAmount)} ETH
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Prize Pool Highlight */}
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
+                    <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wide mb-1">
+                      Total Prize Pool
+                    </p>
+                    <p className="text-lg font-bold text-white mb-0.5">
+                      {formatEther(hackathon.totalSponsorshipAmount)} ETH
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Min: {formatEther(hackathon.minSponsorshipThreshold)} ETH
+                    </p>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="pt-0 px-4 pb-4">
+                  <Button
+                    onClick={() => router.push(`/home/${hackathon.id.toString()}`)}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm py-2 h-9 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300"
+                  >
+                    View Details
+                    <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+
+          {isLoadingHackathons &&
+            Array.from({
+              length: Number(hackathonCount) - hackathons.length,
+            }).map((_, index) => (
+              <Card
+                key={`skeleton-${index}`}
+                className="flex flex-col animate-pulse bg-card border-border/50"
+              >
+                <CardHeader className="bg-muted/10 pb-3 pt-4 px-4">
+                  <div className="h-5 bg-muted/30 rounded w-3/4 mb-1"></div>
+                  <div className="h-3 bg-muted/30 rounded w-full"></div>
+                </CardHeader>
+                <CardContent className="space-y-2.5 pt-3 px-4">
+                  <div className="h-12 bg-muted/20 rounded-lg"></div>
+                  <div className="h-12 bg-muted/20 rounded-lg"></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="h-14 bg-muted/20 rounded-lg"></div>
+                    <div className="h-14 bg-muted/20 rounded-lg"></div>
+                  </div>
+                  <div className="h-16 bg-muted/20 rounded-lg"></div>
+                </CardContent>
+                <CardFooter className="px-4 pb-4">
+                  <div className="h-9 bg-muted/30 rounded w-full"></div>
+                </CardFooter>
+              </Card>
+            ))}
+        </div>
       </div>
     </div>
   );
