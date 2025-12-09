@@ -1,6 +1,6 @@
 require("@matterlabs/hardhat-zksync-solc");
 require("@matterlabs/hardhat-zksync-verify");
-
+require("@nomicfoundation/hardhat-toolbox");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -14,6 +14,9 @@ module.exports = {
     },
   },
   networks: {
+    hardhat: {
+      chainId: 31337,
+    },
     zkSyncSepoliaTestnet: {
       url: "https://sepolia.era.zksync.dev",
       ethNetwork: "sepolia",
@@ -38,12 +41,13 @@ module.exports = {
     tests: "./test",
   },
   solidity: {
-    version: "0.8.23",
+    version: "0.8.20",
     settings: {
       optimizer: {
         enabled: true,
         runs: 200,
       },
+      viaIR: true,
     },
   },
 };

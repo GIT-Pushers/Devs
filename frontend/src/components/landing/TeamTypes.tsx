@@ -1,0 +1,131 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const features = [
+  {
+    title: "Create Hackathons",
+    description: "Launch hackathons with on-chain transparency.",
+    features: [
+      "Custom rules & deadlines",
+      "Prize pool management",
+      "On-chain tracking",
+    ],
+  },
+  {
+    title: "Sponsor Prize Pools",
+    description: "Lock funds in smart contracts.",
+    features: [
+      "Secure contributions",
+      "Automatic distribution",
+    ],
+  },
+  {
+    title: "Form Teams",
+    description: "Team up and register on-chain.",
+    features: [
+      "On-chain registration",
+      "Shared submissions",
+    ],
+  },
+  {
+    title: "Stake to Participate",
+    description: "Stake tokens to enter hackathons.",
+    features: [
+      "Commitment mechanism",
+      "Refundable stakes",
+    ],
+  },
+  {
+    title: "AI-Powered Analysis",
+    description: "Instant code quality evaluation.",
+    features: [
+      "Automated analysis",
+      "GitHub verification",
+    ],
+  },
+  {
+    title: "Multi-Layer Judging",
+    description: "AI + judges + community voting.",
+    features: [
+      "Fair evaluation",
+      "Transparent scoring",
+    ],
+  },
+  {
+    title: "Automatic Prizes",
+    description: "Instant prize distribution via smart contracts.",
+    features: [
+      "No intermediaries",
+      "Trustless execution",
+    ],
+  },
+  {
+    title: "On-Chain Everything",
+    description: "Complete transparency and immutability.",
+    features: [
+      "Public records",
+      "No central authority",
+    ],
+  },
+];
+
+export function TeamTypes() {
+  return (
+    <section id="features" className="py-24 bg-black relative">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-white">Platform Features</h2>
+          <p className="text-base text-gray-300 max-w-xl mx-auto">
+            Everything for decentralized hackathons
+          </p>
+        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ 
+                delay: index * 0.1,
+                duration: 0.5,
+                type: "spring"
+              }}
+              whileHover={{ 
+                y: -5,
+                scale: 1.02,
+                transition: { duration: 0.3 }
+              }}
+            >
+              <Card className="h-full bg-black border border-white/10 hover:border-white/30 transition-colors">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-400 mb-4 text-sm">{feature.description}</p>
+                  <ul className="space-y-2">
+                    {feature.features.map((item, idx) => (
+                      <li key={idx} className="text-xs flex items-start gap-2 text-gray-300">
+                        <span className="text-white mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
