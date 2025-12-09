@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { ConnectWalletButton } from "./ConnectWalletButton";
 import { BackgroundLights } from "./BackgroundLights";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -69,6 +71,11 @@ export function HeroSection() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.8, duration: 0.5, type: "spring" }}
           >
+            <Link href="/home">
+              <Button variant="default" size="lg" className="bg-white text-black hover:bg-gray-100 text-base">
+                Explore Hackathons
+              </Button>
+            </Link>
             <ConnectWalletButton />
           </motion.div>
         </motion.div>
