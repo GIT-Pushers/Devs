@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import * as z from "zod";
 import axios from "axios";
 import { prepareContractCall } from "thirdweb";
 import { TransactionButton } from "thirdweb/react";
-import { mainContract } from "@/app/constants/contracts";
+import { mainContract } from "@/constants/contracts";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,34 +74,39 @@ const steps = [
 const CreateHackathonForm = () => {
   // Zustand store
   const {
-    formData: storedFormData,
-    step,
     imagePreview,
     transactionData,
     isUploading,
     uploadProgress,
     uploadStatus,
-    setFormData,
     setImagePreview,
-    setStep,
     setTransactionData,
     setUploadState,
     resetForm,
   } = useHackathonFormStore();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const {
     control,
     handleSubmit,
     formState: { errors },
-    trigger,
     watch,
     setValue,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
-    defaultValues: storedFormData,
+    defaultValues: {
+      hackathonName: "",
+      description: "",
+      judges: ["", "", "", "", ""],
+      sponsorshipEndTime: "",
+      hackathonStartTime: "",
+      hackathonEndTime: "",
+      stakeAmount: "",
+      minTeamMembers: "",
+      maxTeamMembers: "",
+      minSponsorshipThreshold: "",
+      eventTimeline: [{ eventName: "", eventDate: "", eventDescription: "" }],
+    },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -120,36 +125,6 @@ const CreateHackathonForm = () => {
 
   const watchAllFields = watch();
 
-  // Restore stored form data from Zustand on mount only
-  useEffect(() => {
-    console.log("🔄 Restoring form data from Zustand:", storedFormData);
-    if (storedFormData && Object.keys(storedFormData).length > 0) {
-      Object.entries(storedFormData).forEach(([key, value]) => {
-        if (value !== undefined && value !== "" && key !== "hackathonImage") {
-          console.log(`  Setting ${key}:`, value);
-          setValue(key as keyof FormData, value, {
-            shouldValidate: false,
-            shouldDirty: false,
-          });
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync form changes to Zustand store with debounce
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const subscription = watch((data) => {
-        console.log("📝 Syncing form data to Zustand:", data);
-        setFormData(data as FormData);
-      });
-      return () => subscription.unsubscribe();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [watch, setFormData]);
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
@@ -162,49 +137,6 @@ const CreateHackathonForm = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const validateCurrentStep = async () => {
-    let fieldsToValidate: (keyof FormData)[] = [];
-
-    switch (step) {
-      case 1:
-        fieldsToValidate = ["hackathonName", "description", "hackathonImage"];
-        break;
-      case 2:
-        fieldsToValidate = ["judges"];
-        break;
-      case 3:
-        fieldsToValidate = [
-          "sponsorshipEndTime",
-          "hackathonStartTime",
-          "hackathonEndTime",
-        ];
-        break;
-      case 4:
-        fieldsToValidate = [
-          "stakeAmount",
-          "minTeamMembers",
-          "maxTeamMembers",
-          "minSponsorshipThreshold",
-          "eventTimeline",
-        ];
-        break;
-    }
-
-    const result = await trigger(fieldsToValidate);
-    return result;
-  };
-
-  const nextStep = async () => {
-    const isValid = await validateCurrentStep();
-    if (isValid) {
-      setStep(Math.min(step + 1, 5));
-    }
-  };
-
-  const prevStep = () => {
-    setStep(Math.max(step - 1, 1));
   };
 
   const onSubmit = async (data: FormData) => {
@@ -332,10 +264,12 @@ const CreateHackathonForm = () => {
       console.log("Metadata upload response:", metadataUploadResponse.data);
 
       const metadataHash = metadataUploadResponse.data.IpfsHash;
-      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataHash}`;
+      const metadataUrl = `ipfs://${metadataHash}`;
+      const metadataGatewayUrl = `https://gateway.pinata.cloud/ipfs/${metadataHash}`;
       console.log("✅ Metadata uploaded successfully!");
       console.log("   CID:", metadataHash);
-      console.log("   URL:", metadataUrl);
+      console.log("   IPFS URI:", metadataUrl);
+      console.log("   Gateway URL:", metadataGatewayUrl);
       console.log("");
 
       setUploadState({ uploadStatus: "Preparing on-chain data..." });
@@ -363,7 +297,8 @@ const CreateHackathonForm = () => {
         "📦 IPFS Metadata Hash (contains description, eventTimeline, image):"
       );
       console.log("   Hash:", metadataHash);
-      console.log("   View at:", metadataUrl);
+      console.log("   IPFS URI:", metadataUrl);
+      console.log("   View at:", metadataGatewayUrl);
       console.log("");
 
       console.log("🖼️  Image Details:");
@@ -416,9 +351,9 @@ const CreateHackathonForm = () => {
       console.log("  Max Team Members:", data.maxTeamMembers);
       console.log("");
 
-      console.log("💵 HOSTING FEE:");
-      console.log("  Amount: 0.1 ETH");
-      console.log("  Refund: 80% if 100+ teams submit projects");
+      console.log("💵 CREATION FEE:");
+      console.log("  Amount: 0.02 ETH (MIN_CREATION_FEE)");
+      console.log("  Refund: 80% if 100+ teams participate");
       console.log("");
 
       console.log("============================================");
@@ -431,29 +366,35 @@ const CreateHackathonForm = () => {
       console.log("⛓️  Step 5: Creating blockchain transaction...");
 
       // Convert times to Unix timestamps (seconds)
-      const sponsorshipEndDate = data.sponsorshipEndTime
-        ? new Date(data.sponsorshipEndTime)
-        : null;
-      const sponsorshipEndTimestamp =
-        sponsorshipEndDate && !isNaN(sponsorshipEndDate.getTime())
-          ? Math.floor(sponsorshipEndDate.getTime() / 1000)
-          : Math.floor(Date.now() / 1000);
+      // Normalize input: replace space with T for ISO format compatibility
+      const normalizeDateTime = (dateStr: string) => {
+        if (!dateStr) return null;
+        // Replace space with T if present (e.g., "2025-12-31 23:59" -> "2025-12-31T23:59")
+        const normalized = dateStr.includes(" ")
+          ? dateStr.replace(" ", "T")
+          : dateStr;
+        const date = new Date(normalized);
+        return !isNaN(date.getTime()) ? date : null;
+      };
 
-      const hackathonStartDate = data.hackathonStartTime
-        ? new Date(data.hackathonStartTime)
-        : null;
-      const hackathonStartTimestamp =
-        hackathonStartDate && !isNaN(hackathonStartDate.getTime())
-          ? Math.floor(hackathonStartDate.getTime() / 1000)
-          : Math.floor(Date.now() / 1000);
+      const sponsorshipEndDate = normalizeDateTime(
+        data.sponsorshipEndTime || ""
+      );
+      const sponsorshipEndTimestamp = sponsorshipEndDate
+        ? Math.floor(sponsorshipEndDate.getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
 
-      const hackathonEndDate = data.hackathonEndTime
-        ? new Date(data.hackathonEndTime)
-        : null;
-      const hackathonEndTimestamp =
-        hackathonEndDate && !isNaN(hackathonEndDate.getTime())
-          ? Math.floor(hackathonEndDate.getTime() / 1000)
-          : Math.floor(Date.now() / 1000);
+      const hackathonStartDate = normalizeDateTime(
+        data.hackathonStartTime || ""
+      );
+      const hackathonStartTimestamp = hackathonStartDate
+        ? Math.floor(hackathonStartDate.getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
+
+      const hackathonEndDate = normalizeDateTime(data.hackathonEndTime || "");
+      const hackathonEndTimestamp = hackathonEndDate
+        ? Math.floor(hackathonEndDate.getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
 
       // Filter out empty judge addresses
       const validJudges = data.judges?.filter((judge) => judge !== "") || [];
@@ -466,23 +407,31 @@ const CreateHackathonForm = () => {
         Math.floor(parseFloat(data.minSponsorshipThreshold || "0") * 1e18)
       );
 
-      // Hosting fee (0.1 ETH in Wei)
-      const hostingFeeWei = BigInt(Math.floor(0.1 * 1e18));
+      // Hosting fee - MIN_CREATION_FEE (0.02 ETH in Wei)
+      const hostingFeeWei = BigInt(Math.floor(0.02 * 1e18));
+
+      // Convert to uint32 for team limits (contract requires uint32)
+      const minTeamMembersUint32 = parseInt(data.minTeamMembers || "1");
+      const maxTeamMembersUint32 = parseInt(data.maxTeamMembers || "10");
 
       console.log("Transaction parameters:");
-      console.log("  Metadata URI:", metadataUrl);
+      console.log("  Metadata URI (IPFS):", metadataUrl);
       console.log("  Judges:", validJudges);
       console.log("  Sponsorship End:", sponsorshipEndTimestamp);
       console.log("  Hackathon Start:", hackathonStartTimestamp);
       console.log("  Hackathon End:", hackathonEndTimestamp);
       console.log("  Stake Amount (Wei):", stakeAmountWei.toString());
-      console.log("  Min Team Members:", parseInt(data.minTeamMembers || "0"));
-      console.log("  Max Team Members:", parseInt(data.maxTeamMembers || "0"));
+      console.log("  Min Team Members (uint32):", minTeamMembersUint32);
+      console.log("  Max Team Members (uint32):", maxTeamMembersUint32);
       console.log(
         "  Min Sponsorship Threshold (Wei):",
         minSponsorshipThresholdWei.toString()
       );
-      console.log("  Hosting Fee (Wei):", hostingFeeWei.toString());
+      console.log(
+        "  Creation Fee (Wei):",
+        hostingFeeWei.toString(),
+        "(0.02 ETH)"
+      );
       console.log("");
 
       // Store transaction data for TransactionButton
@@ -493,8 +442,8 @@ const CreateHackathonForm = () => {
         hackathonStartTimestamp,
         hackathonEndTimestamp,
         stakeAmountWei,
-        minTeamMembers: parseInt(data.minTeamMembers || "0"),
-        maxTeamMembers: parseInt(data.maxTeamMembers || "0"),
+        minTeamMembers: minTeamMembersUint32,
+        maxTeamMembers: maxTeamMembersUint32,
         minSponsorshipThresholdWei,
         hostingFeeWei,
         metadataHash,
@@ -537,1351 +486,913 @@ const CreateHackathonForm = () => {
     toast.error("Transaction failed: " + error.message);
   };
 
-  const renderStepContent = () => {
-    switch (step) {
-      case 1:
-        return (
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            Create Hackathon
+          </h1>
+          <p className="text-muted-foreground">
+            Fill in all the details to create your hackathon on the blockchain
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit, onError)}>
           <div className="space-y-8">
-            <div className="border-b pb-4">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Basic Information
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Provide essential details about your hackathon
-              </p>
-            </div>
-
-            <Controller
-              name="hackathonName"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="hackathonName"
-                    className="text-base font-semibold"
-                  >
-                    Hackathon Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    {...field}
-                    id="hackathonName"
-                    placeholder="e.g., Web3 Innovation Hackathon 2025"
-                    className="h-12 text-base"
-                  />
-                  {errors.hackathonName && (
-                    <div className="flex items-center gap-2 text-destructive text-sm">
-                      <AlertCircle className="w-4 h-4" />
-                      <span>{errors.hackathonName.message}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            />
-
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="description"
-                    className="text-base font-semibold"
-                  >
-                    Description <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    {...field}
-                    id="description"
-                    placeholder="Describe your hackathon, its goals, themes, and what makes it special..."
-                    className="min-h-32 text-base resize-none"
-                  />
-                  <div className="flex justify-between items-center">
-                    <div>
-                      {errors.description && (
-                        <div className="flex items-center gap-2 text-destructive text-sm">
-                          <AlertCircle className="w-4 h-4" />
-                          <span>{errors.description.message}</span>
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {watchAllFields.description?.length || 0}/2000
-                    </span>
-                  </div>
-                </div>
-              )}
-            />
-
-            <Controller
-              name="hackathonImage"
-              control={control}
-              render={({ field: { onChange } }) => {
-                const imageError = errors.hackathonImage;
-                const errorMessage = imageError?.message
-                  ? String(imageError.message)
-                  : "Image is required";
-
-                return (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="hackathonImage"
-                      className="text-base font-semibold"
-                    >
-                      Hackathon Banner Image{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer bg-muted/20">
-                      <input
-                        type="file"
-                        id="hackathonImage"
-                        accept="image/*"
-                        onChange={(e) => {
-                          handleImageChange(e);
-                          onChange(e.target.files);
-                        }}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="hackathonImage"
-                        className="cursor-pointer block"
-                      >
-                        {imagePreview ? (
-                          <div className="space-y-4">
-                            <Image
-                              src={imagePreview}
-                              alt="Preview"
-                              width={256}
-                              height={256}
-                              className="mx-auto max-h-64 rounded-lg object-cover"
-                            />
-                            <Button type="button" variant="outline" size="sm">
-                              <Upload className="w-4 h-4 mr-2" />
-                              Change Image
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
-                            <div>
-                              <p className="text-base font-medium">
-                                Click to upload or drag and drop
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                PNG, JPG, GIF up to 10MB
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                    {imageError && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errorMessage}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              }}
-            />
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-8">
-            <div className="border-b pb-4">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Judge Panel
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add Ethereum wallet addresses for judges (minimum 5 required)
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {fields.map((field, index) => (
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Basic Information</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Provide essential details about your hackathon
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <Controller
-                  key={field.id}
-                  name={`judges.${index}`}
+                  name="hackathonName"
                   control={control}
                   render={({ field }) => (
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-1">
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
-                            #{index + 1}
-                          </span>
-                          <Input
-                            {...field}
-                            placeholder="0x..."
-                            className="h-12 pl-12 font-mono text-sm"
-                          />
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="hackathonName"
+                        className="text-base font-semibold"
+                      >
+                        Hackathon Name{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        {...field}
+                        id="hackathonName"
+                        placeholder="e.g., Web3 Innovation Hackathon 2025"
+                        className="h-12 text-base"
+                      />
+                      {errors.hackathonName && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{errors.hackathonName.message}</span>
                         </div>
-                        {errors.judges?.[index] && (
-                          <div className="flex items-center gap-2 text-destructive text-xs">
-                            <AlertCircle className="w-3 h-3" />
-                            <span>{errors.judges[index]?.message}</span>
-                          </div>
-                        )}
-                      </div>
-                      {fields.length > 5 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          className="h-12 w-12 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
                       )}
                     </div>
                   )}
                 />
-              ))}
-            </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => append("")}
-              className="w-full h-12"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Another Judge
-            </Button>
-
-            {errors.judges && typeof errors.judges.message === "string" && (
-              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
-                <AlertCircle className="w-4 h-4" />
-                <span>{errors.judges.message}</span>
-              </div>
-            )}
-
-            <div className="bg-muted/50 border border-border rounded-lg p-4">
-              <p className="text-sm text-foreground flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                  {
-                    fields.filter((f) => watch(`judges.${fields.indexOf(f)}`))
-                      .length
-                  }
-                </span>
-                judges added{" "}
-                {fields.length >= 5 && (
-                  <Check className="w-4 h-4 text-green-500 ml-auto" />
-                )}
-              </p>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-8">
-            <div className="border-b pb-4">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Event Timeline
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure sponsorship deadline and hackathon schedule
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <Controller
-                name="sponsorshipEndTime"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="sponsorshipEndTime"
-                      className="text-base font-semibold flex items-center gap-2"
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">
-                        1
-                      </span>
-                      Sponsorship Deadline{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      type="datetime-local"
-                      id="sponsorshipEndTime"
-                      value={
-                        field.value
-                          ? (() => {
-                              const d = new Date(field.value);
-                              if (!isNaN(d.getTime())) {
-                                const year = d.getFullYear();
-                                const month = String(d.getMonth() + 1).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const day = String(d.getDate()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const hours = String(d.getHours()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const minutes = String(d.getMinutes()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                return `${year}-${month}-${day}T${hours}:${minutes}`;
-                              }
-                              return "";
-                            })()
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value) {
-                          const date = new Date(value);
-                          field.onChange(date.toISOString());
-                        } else {
-                          field.onChange("");
-                        }
-                      }}
-                      className="w-full h-12"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      When sponsors must commit funding
-                    </p>
-                    {errors.sponsorshipEndTime && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{String(errors.sponsorshipEndTime.message)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-
-              <div className="flex items-center justify-center">
-                <ArrowRight className="w-6 h-6 text-muted-foreground" />
-              </div>
-
-              <Controller
-                name="hackathonStartTime"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="hackathonStartTime"
-                      className="text-base font-semibold flex items-center gap-2"
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">
-                        2
-                      </span>
-                      Hackathon Start Time{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      type="datetime-local"
-                      id="hackathonStartTime"
-                      value={
-                        field.value
-                          ? (() => {
-                              const d = new Date(field.value);
-                              if (!isNaN(d.getTime())) {
-                                const year = d.getFullYear();
-                                const month = String(d.getMonth() + 1).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const day = String(d.getDate()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const hours = String(d.getHours()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const minutes = String(d.getMinutes()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                return `${year}-${month}-${day}T${hours}:${minutes}`;
-                              }
-                              return "";
-                            })()
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value) {
-                          const date = new Date(value);
-                          field.onChange(date.toISOString());
-                        } else {
-                          field.onChange("");
-                        }
-                      }}
-                      className="w-full h-12"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      When participants begin building
-                    </p>
-                    {errors.hackathonStartTime && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{String(errors.hackathonStartTime.message)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-
-              <div className="flex items-center justify-center">
-                <ArrowRight className="w-6 h-6 text-muted-foreground" />
-              </div>
-
-              <Controller
-                name="hackathonEndTime"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="hackathonEndTime"
-                      className="text-base font-semibold flex items-center gap-2"
-                    >
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">
-                        3
-                      </span>
-                      Hackathon End Time{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      type="datetime-local"
-                      id="hackathonEndTime"
-                      value={
-                        field.value
-                          ? (() => {
-                              const d = new Date(field.value);
-                              if (!isNaN(d.getTime())) {
-                                const year = d.getFullYear();
-                                const month = String(d.getMonth() + 1).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const day = String(d.getDate()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const hours = String(d.getHours()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                const minutes = String(d.getMinutes()).padStart(
-                                  2,
-                                  "0"
-                                );
-                                return `${year}-${month}-${day}T${hours}:${minutes}`;
-                              }
-                              return "";
-                            })()
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value) {
-                          const date = new Date(value);
-                          field.onChange(date.toISOString());
-                        } else {
-                          field.onChange("");
-                        }
-                      }}
-                      className="w-full h-12"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Final submission deadline
-                    </p>
-                    {errors.hackathonEndTime && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{String(errors.hackathonEndTime.message)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-
-            {watchAllFields.sponsorshipEndTime &&
-              watchAllFields.hackathonStartTime &&
-              watchAllFields.hackathonEndTime && (
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                  <p className="text-sm text-foreground font-medium mb-2">
-                    Timeline Summary:
-                  </p>
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    <p>
-                      Duration:{" "}
-                      {(() => {
-                        const endDate = new Date(
-                          watchAllFields.hackathonEndTime
-                        );
-                        const startDate = new Date(
-                          watchAllFields.hackathonStartTime
-                        );
-                        if (
-                          !isNaN(endDate.getTime()) &&
-                          !isNaN(startDate.getTime())
-                        ) {
-                          return Math.ceil(
-                            (endDate.getTime() - startDate.getTime()) /
-                              (1000 * 60 * 60 * 24)
-                          );
-                        }
-                        return 0;
-                      })()}{" "}
-                      days
-                    </p>
-                    <p>
-                      Sponsorship window:{" "}
-                      {(() => {
-                        const endDate = new Date(
-                          watchAllFields.sponsorshipEndTime
-                        );
-                        if (!isNaN(endDate.getTime())) {
-                          return Math.ceil(
-                            (endDate.getTime() - Date.now()) /
-                              (1000 * 60 * 60 * 24)
-                          );
-                        }
-                        return 0;
-                      })()}{" "}
-                      days from now
-                    </p>
-                  </div>
-                </div>
-              )}
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-8">
-            <div className="border-b pb-4">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Financial Terms
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Define stakes, fees, and team participation limits
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <Controller
-                name="stakeAmount"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="stakeAmount"
-                      className="text-base font-semibold"
-                    >
-                      Team Stake Amount{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="description"
+                        className="text-base font-semibold"
+                      >
+                        Description <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
                         {...field}
-                        id="stakeAmount"
-                        type="number"
-                        step="0.001"
-                        placeholder="0.1"
-                        className="h-12 pr-16"
+                        id="description"
+                        placeholder="Describe your hackathon, its goals, themes, and what makes it special..."
+                        className="min-h-32 text-base resize-none"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                        ETH
-                      </span>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          {errors.description && (
+                            <div className="flex items-center gap-2 text-destructive text-sm">
+                              <AlertCircle className="w-4 h-4" />
+                              <span>{errors.description.message}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {watchAllFields.description?.length || 0}/2000
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Amount each team must stake to participate
-                    </p>
-                    {errors.stakeAmount && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.stakeAmount.message}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
+                  )}
+                />
 
-              <Controller
-                name="minSponsorshipThreshold"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="minSponsorshipThreshold"
-                      className="text-base font-semibold"
-                    >
-                      Min Sponsorship{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        {...field}
-                        id="minSponsorshipThreshold"
-                        type="number"
-                        step="0.001"
-                        placeholder="0.05"
-                        className="h-12 pr-16"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                        ETH
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Minimum amount per sponsor
-                    </p>
-                    {errors.minSponsorshipThreshold && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.minSponsorshipThreshold.message}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
+                <Controller
+                  name="hackathonImage"
+                  control={control}
+                  render={({ field: { onChange } }) => {
+                    const imageError = errors.hackathonImage;
+                    const errorMessage = imageError?.message
+                      ? String(imageError.message)
+                      : "Image is required";
 
-              <Controller
-                name="minTeamMembers"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="minTeamMembers"
-                      className="text-base font-semibold"
-                    >
-                      Min Team Members{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      {...field}
-                      id="minTeamMembers"
-                      type="number"
-                      placeholder="2"
-                      className="h-12"
+                    return (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="hackathonImage"
+                          className="text-base font-semibold"
+                        >
+                          Hackathon Banner Image{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer bg-muted/20">
+                          <input
+                            type="file"
+                            id="hackathonImage"
+                            accept="image/*"
+                            onChange={(e) => {
+                              handleImageChange(e);
+                              onChange(e.target.files);
+                            }}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="hackathonImage"
+                            className="cursor-pointer block"
+                          >
+                            {imagePreview ? (
+                              <div className="space-y-4">
+                                <Image
+                                  src={imagePreview}
+                                  alt="Preview"
+                                  width={256}
+                                  height={256}
+                                  className="mx-auto max-h-64 rounded-lg object-cover"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  Change Image
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+                                <div>
+                                  <p className="text-base font-medium">
+                                    Click to upload or drag and drop
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    PNG, JPG, GIF up to 10MB
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                        {imageError && (
+                          <div className="flex items-center gap-2 text-destructive text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{errorMessage}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Judge Panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Judge Panel</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Add Ethereum wallet addresses for judges (minimum 5 required)
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <Controller
+                      key={field.id}
+                      name={`judges.${index}`}
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex gap-2">
+                          <div className="flex-1 space-y-1">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
+                                #{index + 1}
+                              </span>
+                              <Input
+                                {...field}
+                                placeholder="0x..."
+                                className="h-12 pl-12 font-mono text-sm"
+                              />
+                            </div>
+                            {errors.judges?.[index] && (
+                              <div className="flex items-center gap-2 text-destructive text-xs">
+                                <AlertCircle className="w-3 h-3" />
+                                <span>{errors.judges[index]?.message}</span>
+                              </div>
+                            )}
+                          </div>
+                          {fields.length > 5 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => remove(index)}
+                              className="h-12 w-12 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Minimum members per team
-                    </p>
-                    {errors.minTeamMembers && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.minTeamMembers.message}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-
-              <Controller
-                name="maxTeamMembers"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="maxTeamMembers"
-                      className="text-base font-semibold"
-                    >
-                      Max Team Members{" "}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      {...field}
-                      id="maxTeamMembers"
-                      type="number"
-                      placeholder="10"
-                      className="h-12"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Maximum members per team
-                    </p>
-                    {errors.maxTeamMembers && (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.maxTeamMembers.message}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base font-semibold">
-                    Event Timeline <span className="text-destructive">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Define what happens at each stage of your hackathon
-                  </p>
+                  ))}
                 </div>
+
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    appendTimeline({
-                      eventName: "",
-                      eventDate: "",
-                      eventDescription: "",
-                    })
-                  }
-                  className="h-9"
+                  onClick={() => append("")}
+                  className="w-full h-12"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Event
+                  Add Another Judge
                 </Button>
-              </div>
 
-              <div className="space-y-4">
-                {timelineFields.map((field, index) => (
-                  <Card key={field.id} className="border-2">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-muted-foreground">
-                          Event #{index + 1}
-                        </h3>
-                        {timelineFields.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTimeline(index)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <Controller
-                          name={`eventTimeline.${index}.eventName`}
-                          control={control}
-                          render={({ field }) => (
-                            <div className="space-y-2">
-                              <Label htmlFor={`eventName-${index}`}>
-                                Event Name{" "}
-                                <span className="text-destructive">*</span>
-                              </Label>
-                              <Input
-                                {...field}
-                                id={`eventName-${index}`}
-                                placeholder="e.g., Registration Opens"
-                                className="h-11"
-                              />
-                              {errors.eventTimeline?.[index]?.eventName && (
-                                <div className="flex items-center gap-2 text-destructive text-xs">
-                                  <AlertCircle className="w-3 h-3" />
-                                  <span>
-                                    {
-                                      errors.eventTimeline[index]?.eventName
-                                        ?.message
-                                    }
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        />
-
-                        <Controller
-                          name={`eventTimeline.${index}.eventDate`}
-                          control={control}
-                          render={({ field }) => (
-                            <div className="space-y-2">
-                              <Label htmlFor={`eventDate-${index}`}>
-                                Date & Time{" "}
-                                <span className="text-destructive">*</span>
-                              </Label>
-                              <Input
-                                type="datetime-local"
-                                id={`eventDate-${index}`}
-                                value={
-                                  field.value
-                                    ? (() => {
-                                        const d = new Date(field.value);
-                                        if (!isNaN(d.getTime())) {
-                                          const year = d.getFullYear();
-                                          const month = String(
-                                            d.getMonth() + 1
-                                          ).padStart(2, "0");
-                                          const day = String(
-                                            d.getDate()
-                                          ).padStart(2, "0");
-                                          const hours = String(
-                                            d.getHours()
-                                          ).padStart(2, "0");
-                                          const minutes = String(
-                                            d.getMinutes()
-                                          ).padStart(2, "0");
-                                          return `${year}-${month}-${day}T${hours}:${minutes}`;
-                                        }
-                                        return "";
-                                      })()
-                                    : ""
-                                }
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (value) {
-                                    const date = new Date(value);
-                                    field.onChange(date.toISOString());
-                                  } else {
-                                    field.onChange("");
-                                  }
-                                }}
-                                className="w-full h-11"
-                              />
-                              {errors.eventTimeline?.[index]?.eventDate && (
-                                <div className="flex items-center gap-2 text-destructive text-xs">
-                                  <AlertCircle className="w-3 h-3" />
-                                  <span>
-                                    {
-                                      errors.eventTimeline[index]?.eventDate
-                                        ?.message
-                                    }
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        />
-
-                        <Controller
-                          name={`eventTimeline.${index}.eventDescription`}
-                          control={control}
-                          render={({ field }) => (
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor={`eventDescription-${index}`}>
-                                Description{" "}
-                                <span className="text-destructive">*</span>
-                              </Label>
-                              <Textarea
-                                {...field}
-                                id={`eventDescription-${index}`}
-                                placeholder="Describe what happens at this stage..."
-                                className="min-h-20 resize-none"
-                              />
-                              {errors.eventTimeline?.[index]
-                                ?.eventDescription && (
-                                <div className="flex items-center gap-2 text-destructive text-xs">
-                                  <AlertCircle className="w-3 h-3" />
-                                  <span>
-                                    {
-                                      errors.eventTimeline[index]
-                                        ?.eventDescription?.message
-                                    }
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {errors.eventTimeline &&
-                typeof errors.eventTimeline.message === "string" && (
-                  <div className="flex items-center gap-2 text-destructive text-sm">
+                {errors.judges && typeof errors.judges.message === "string" && (
+                  <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
                     <AlertCircle className="w-4 h-4" />
-                    <span>{errors.eventTimeline.message}</span>
+                    <span>{errors.judges.message}</span>
                   </div>
                 )}
-            </div>
 
-            {watchAllFields.stakeAmount && (
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                <p className="text-sm text-foreground font-medium mb-2">
-                  Team Stake Amount:
+                <div className="bg-muted/50 border border-border rounded-lg p-4">
+                  <p className="text-sm text-foreground flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                      {
+                        fields.filter((f) =>
+                          watch(`judges.${fields.indexOf(f)}`)
+                        ).length
+                      }
+                    </span>
+                    judges added{" "}
+                    {fields.length >= 5 && (
+                      <Check className="w-4 h-4 text-green-500 ml-auto" />
+                    )}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Event Timeline */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Event Timeline</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure sponsorship deadline and hackathon schedule
                 </p>
-                <p className="text-2xl font-bold text-primary">
-                  {parseFloat(watchAllFields.stakeAmount || "0").toFixed(3)} ETH
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Per team participation stake
-                </p>
-              </div>
-            )}
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-8">
-            <div className="border-b pb-4">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Final Review
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Review all information before submitting
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {imagePreview && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <Image
-                      src={imagePreview}
-                      alt="Hackathon banner"
-                      width={512}
-                      height={192}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="font-semibold">
-                      {watchAllFields.hackathonName}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Description</p>
-                    <p className="text-sm">{watchAllFields.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Judges (
-                    {fields.filter((_, i) => watch(`judges.${i}`)).length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {fields.map((field, index) => {
-                      const value = watch(`judges.${index}`);
-                      return value ? (
-                        <div
-                          key={field.id}
-                          className="flex items-center gap-2 text-sm font-mono bg-muted p-2 rounded"
-                        >
-                          <span className="text-muted-foreground">
-                            #{index + 1}
-                          </span>
-                          <span className="truncate">{value}</span>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Timeline</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Sponsorship Deadline
-                    </p>
-                    <p className="font-semibold">
-                      {(() => {
-                        const d = new Date(watchAllFields.sponsorshipEndTime);
-                        return !isNaN(d.getTime())
-                          ? d.toLocaleString()
-                          : "Invalid date";
-                      })()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Hackathon Start
-                    </p>
-                    <p className="font-semibold">
-                      {(() => {
-                        const d = new Date(watchAllFields.hackathonStartTime);
-                        return !isNaN(d.getTime())
-                          ? d.toLocaleString()
-                          : "Invalid date";
-                      })()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Hackathon End
-                    </p>
-                    <p className="font-semibold">
-                      {(() => {
-                        const d = new Date(watchAllFields.hackathonEndTime);
-                        return !isNaN(d.getTime())
-                          ? d.toLocaleString()
-                          : "Invalid date";
-                      })()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Financial Details</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Team Stake</p>
-                    <p className="font-semibold">
-                      {watchAllFields.stakeAmount} ETH
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Min Sponsorship
-                    </p>
-                    <p className="font-semibold">
-                      {watchAllFields.minSponsorshipThreshold} ETH
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Team Members Range
-                    </p>
-                    <p className="font-semibold">
-                      {watchAllFields.minTeamMembers} -{" "}
-                      {watchAllFields.maxTeamMembers} members
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Event Timeline ({watchAllFields.eventTimeline?.length || 0}{" "}
-                    Events)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {watchAllFields.eventTimeline?.map((event, index) => (
-                      <div
-                        key={index}
-                        className="border-l-4 border-primary pl-4 py-2"
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Controller
+                  name="sponsorshipEndTime"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="sponsorshipEndTime"
+                        className="text-base font-semibold"
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-foreground mb-1">
-                              {event.eventName || "Unnamed Event"}
-                            </h4>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {event.eventDate
-                                ? (() => {
-                                    const d = new Date(event.eventDate);
-                                    return !isNaN(d.getTime())
-                                      ? d.toLocaleString()
-                                      : "Invalid date";
-                                  })()
-                                : "No date set"}
-                            </p>
-                            <p className="text-sm text-foreground">
-                              {event.eventDescription || "No description"}
-                            </p>
-                          </div>
-                          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
-                            {index + 1}
+                        Sponsorship Deadline{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        type="text"
+                        id="sponsorshipEndTime"
+                        placeholder="e.g., 2025-12-31 23:59 or 2025-12-31T23:59"
+                        {...field}
+                        className="w-full h-12"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format: YYYY-MM-DD HH:MM (e.g., 2025-12-31 23:59)
+                      </p>
+                      {errors.sponsorshipEndTime && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>
+                            {String(errors.sponsorshipEndTime.message)}
                           </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Hosting Fee Notice */}
-              <Card className="border-2 border-primary/30 bg-primary/5">
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <div className="shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                        <AlertCircle className="w-6 h-6 text-primary" />
-                      </div>
+                      )}
                     </div>
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground mb-1">
-                          Hosting Fee Required
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          To host this hackathon, you must stake a hosting fee
+                  )}
+                />
+
+                <Controller
+                  name="hackathonStartTime"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="hackathonStartTime"
+                        className="text-base font-semibold"
+                      >
+                        Hackathon Start Time{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        type="text"
+                        id="hackathonStartTime"
+                        placeholder="e.g., 2026-01-01 00:00 or 2026-01-01T00:00"
+                        {...field}
+                        className="w-full h-12"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format: YYYY-MM-DD HH:MM (e.g., 2026-01-01 00:00)
+                      </p>
+                      {errors.hackathonStartTime && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>
+                            {String(errors.hackathonStartTime.message)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="hackathonEndTime"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="hackathonEndTime"
+                        className="text-base font-semibold"
+                      >
+                        Hackathon End Time{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        type="text"
+                        id="hackathonEndTime"
+                        placeholder="e.g., 2026-01-07 23:59 or 2026-01-07T23:59"
+                        {...field}
+                        className="w-full h-12"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format: YYYY-MM-DD HH:MM (e.g., 2026-01-07 23:59)
+                      </p>
+                      {errors.hackathonEndTime && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{String(errors.hackathonEndTime.message)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                />
+
+                {watchAllFields.sponsorshipEndTime &&
+                  watchAllFields.hackathonStartTime &&
+                  watchAllFields.hackathonEndTime && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                      <p className="text-sm text-foreground font-medium mb-2">
+                        Timeline Summary:
+                      </p>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <p>
+                          Duration:{" "}
+                          {(() => {
+                            const endDate = new Date(
+                              watchAllFields.hackathonEndTime
+                            );
+                            const startDate = new Date(
+                              watchAllFields.hackathonStartTime
+                            );
+                            if (
+                              !isNaN(endDate.getTime()) &&
+                              !isNaN(startDate.getTime())
+                            ) {
+                              return Math.ceil(
+                                (endDate.getTime() - startDate.getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                            }
+                            return 0;
+                          })()}{" "}
+                          days
+                        </p>
+                        <p>
+                          Sponsorship window:{" "}
+                          {(() => {
+                            const endDate = new Date(
+                              watchAllFields.sponsorshipEndTime
+                            );
+                            if (!isNaN(endDate.getTime())) {
+                              return Math.ceil(
+                                (endDate.getTime() - Date.now()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                            }
+                            return 0;
+                          })()}{" "}
+                          days from now
                         </p>
                       </div>
-                      <div className="bg-background rounded-lg p-4 space-y-2">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-3xl font-bold text-primary">
-                            0.1 ETH
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            hosting stake
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+
+            {/* Financial Terms */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Financial Terms</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Define stakes, fees, and team participation limits
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Controller
+                    name="stakeAmount"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="stakeAmount"
+                          className="text-base font-semibold"
+                        >
+                          Team Stake Amount{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            id="stakeAmount"
+                            type="number"
+                            step="0.001"
+                            placeholder="0.1"
+                            className="h-12 pr-16"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                            ETH
                           </span>
                         </div>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2 text-foreground">
-                            <Check className="w-4 h-4 text-green-500" />
-                            <span>
-                              <span className="font-semibold">
-                                80% refunded
-                              </span>{" "}
-                              if{" "}
-                              <span className="font-semibold">100+ teams</span>{" "}
-                              submit projects
-                            </span>
+                        <p className="text-xs text-muted-foreground">
+                          Amount each team must stake to participate
+                        </p>
+                        {errors.stakeAmount && (
+                          <div className="flex items-center gap-2 text-destructive text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{errors.stakeAmount.message}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
+                        )}
+                      </div>
+                    )}
+                  />
+
+                  <Controller
+                    name="minSponsorshipThreshold"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="minSponsorshipThreshold"
+                          className="text-base font-semibold"
+                        >
+                          Min Sponsorship{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            id="minSponsorshipThreshold"
+                            type="number"
+                            step="0.001"
+                            placeholder="0.05"
+                            className="h-12 pr-16"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                            ETH
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Minimum amount per sponsor
+                        </p>
+                        {errors.minSponsorshipThreshold && (
+                          <div className="flex items-center gap-2 text-destructive text-sm">
                             <AlertCircle className="w-4 h-4" />
                             <span>
-                              Ensures commitment to hosting a successful event
+                              {errors.minSponsorshipThreshold.message}
                             </span>
                           </div>
-                        </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
-      {/* Mobile Header with Progress */}
-      <div className="lg:hidden sticky top-0 z-20 bg-card border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">
-              Create Hackathon
-            </h1>
-            <p className="text-xs text-muted-foreground">Step {step} of 5</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-9 w-9"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Sidebar Overlay for Mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Vertical Sidebar Progress */}
-      <div
-        className={`fixed lg:sticky left-0 top-0 h-screen w-72 bg-card border-r border-border p-6 flex flex-col z-40 transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="mb-8">
-          <div className="flex items-center justify-between lg:block">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Create Hackathon
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Complete all steps to launch
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden h-8 w-8"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-6 overflow-y-auto">
-          {steps.map((s) => (
-            <div key={s.id} className="relative">
-              <div className="flex items-start gap-4">
-                <div className="relative shrink-0">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                      s.id === step
-                        ? "bg-primary text-primary-foreground shadow-lg ring-4 ring-primary/20"
-                        : s.id < step
-                        ? "bg-primary/90 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {s.id < step ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <span>{s.id}</span>
                     )}
+                  />
+
+                  <Controller
+                    name="minTeamMembers"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="minTeamMembers"
+                          className="text-base font-semibold"
+                        >
+                          Min Team Members{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          {...field}
+                          id="minTeamMembers"
+                          type="number"
+                          placeholder="2"
+                          className="h-12"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Minimum members per team
+                        </p>
+                        {errors.minTeamMembers && (
+                          <div className="flex items-center gap-2 text-destructive text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{errors.minTeamMembers.message}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  />
+
+                  <Controller
+                    name="maxTeamMembers"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="maxTeamMembers"
+                          className="text-base font-semibold"
+                        >
+                          Max Team Members{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          {...field}
+                          id="maxTeamMembers"
+                          type="number"
+                          placeholder="10"
+                          className="h-12"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Maximum members per team
+                        </p>
+                        {errors.maxTeamMembers && (
+                          <div className="flex items-center gap-2 text-destructive text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{errors.maxTeamMembers.message}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {watchAllFields.stakeAmount && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                    <p className="text-sm text-foreground font-medium mb-2">
+                      Team Stake Amount:
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {parseFloat(watchAllFields.stakeAmount || "0").toFixed(3)}{" "}
+                      ETH
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Per team participation stake
+                    </p>
                   </div>
-                  {s.id !== steps.length && (
-                    <div
-                      className={`absolute left-5 top-10 w-0.5 h-12 ${
-                        s.id < step ? "bg-primary" : "bg-muted"
-                      }`}
-                    />
-                  )}
-                </div>
-                <div className="flex-1 pt-1">
-                  <p
-                    className={`text-sm font-semibold ${
-                      s.id === step
-                        ? "text-foreground"
-                        : s.id < step
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {s.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {s.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                )}
+              </CardContent>
+            </Card>
 
-        <div className="mt-auto pt-6 border-t border-border">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-semibold text-foreground">
-              {Math.round((step / 5) * 100)}%
-            </span>
-          </div>
-          <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-500"
-              style={{ width: `${(step / 5) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 lg:ml-0 w-full">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
-          <Card className="border-border shadow-sm">
-            <CardContent className="p-6 sm:p-8 lg:p-10">
-              <form onSubmit={handleSubmit(onSubmit, onError)}>
-                {renderStepContent()}
-
-                {/* Navigation Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:justify-between mt-8 lg:mt-10 pt-6 lg:pt-8 border-t">
+            {/* Event Timeline Details */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">
+                      Event Timeline Details
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Define what happens at each stage of your hackathon
+                    </p>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={prevStep}
-                    disabled={step === 1}
-                    className="h-11 px-6 w-full sm:w-auto"
+                    size="sm"
+                    onClick={() =>
+                      appendTimeline({
+                        eventName: "",
+                        eventDate: "",
+                        eventDescription: "",
+                      })
+                    }
+                    className="h-9"
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Previous
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Event
                   </Button>
-
-                  {step < 5 ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      className="h-11 px-8 w-full sm:w-auto"
-                      disabled={isUploading}
-                    >
-                      Continue
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  ) : transactionData ? (
-                    <TransactionButton
-                      transaction={() =>
-                        prepareContractCall({
-                          contract: mainContract,
-                          method:
-                            "function createHackathon(string metadataURI, address[] judges, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 minSponsorshipThreshold) payable returns (uint256)",
-                          params: [
-                            transactionData.metadataUrl,
-                            transactionData.validJudges,
-                            BigInt(transactionData.sponsorshipEndTimestamp),
-                            BigInt(transactionData.hackathonStartTimestamp),
-                            BigInt(transactionData.hackathonEndTimestamp),
-                            transactionData.stakeAmountWei,
-                            transactionData.minTeamMembers,
-                            transactionData.maxTeamMembers,
-                            transactionData.minSponsorshipThresholdWei,
-                          ],
-                          value: transactionData.hostingFeeWei,
-                        })
-                      }
-                      onTransactionConfirmed={() => handleTransactionSuccess()}
-                      onError={(error) => handleTransactionError(error)}
-                      className="h-11 px-8 w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      Create Hackathon on Blockchain
-                      <Check className="w-4 h-4 ml-2" />
-                    </TransactionButton>
-                  ) : (
-                    <Button
-                      type="submit"
-                      className="h-11 px-8 w-full sm:w-auto"
-                      disabled={isUploading}
-                    >
-                      {isUploading ? (
-                        <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          {uploadStatus || "Uploading..."}{" "}
-                          {uploadProgress > 0 && `${uploadProgress}%`}
-                        </>
-                      ) : (
-                        <>
-                          Prepare Metadata
-                          <Check className="w-4 h-4 ml-2" />
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {timelineFields.map((field, index) => (
+                    <Card key={field.id} className="border-2">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <h3 className="text-sm font-semibold text-muted-foreground">
+                            Event #{index + 1}
+                          </h3>
+                          {timelineFields.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTimeline(index)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Controller
+                            name={`eventTimeline.${index}.eventName`}
+                            control={control}
+                            render={({ field }) => (
+                              <div className="space-y-2">
+                                <Label htmlFor={`eventName-${index}`}>
+                                  Event Name{" "}
+                                  <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                  {...field}
+                                  id={`eventName-${index}`}
+                                  placeholder="e.g., Registration Opens"
+                                  className="h-11"
+                                />
+                                {errors.eventTimeline?.[index]?.eventName && (
+                                  <div className="flex items-center gap-2 text-destructive text-xs">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>
+                                      {
+                                        errors.eventTimeline[index]?.eventName
+                                          ?.message
+                                      }
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          />
+
+                          <Controller
+                            name={`eventTimeline.${index}.eventDate`}
+                            control={control}
+                            render={({ field }) => (
+                              <div className="space-y-2">
+                                <Label htmlFor={`eventDate-${index}`}>
+                                  Date & Time{" "}
+                                  <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                  type="datetime-local"
+                                  id={`eventDate-${index}`}
+                                  value={
+                                    field.value
+                                      ? (() => {
+                                          const d = new Date(field.value);
+                                          if (!isNaN(d.getTime())) {
+                                            const year = d.getFullYear();
+                                            const month = String(
+                                              d.getMonth() + 1
+                                            ).padStart(2, "0");
+                                            const day = String(
+                                              d.getDate()
+                                            ).padStart(2, "0");
+                                            const hours = String(
+                                              d.getHours()
+                                            ).padStart(2, "0");
+                                            const minutes = String(
+                                              d.getMinutes()
+                                            ).padStart(2, "0");
+                                            return `${year}-${month}-${day}T${hours}:${minutes}`;
+                                          }
+                                          return "";
+                                        })()
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value) {
+                                      const date = new Date(value);
+                                      field.onChange(date.toISOString());
+                                    } else {
+                                      field.onChange("");
+                                    }
+                                  }}
+                                  className="w-full h-11"
+                                />
+                                {errors.eventTimeline?.[index]?.eventDate && (
+                                  <div className="flex items-center gap-2 text-destructive text-xs">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>
+                                      {
+                                        errors.eventTimeline[index]?.eventDate
+                                          ?.message
+                                      }
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          />
+
+                          <Controller
+                            name={`eventTimeline.${index}.eventDescription`}
+                            control={control}
+                            render={({ field }) => (
+                              <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor={`eventDescription-${index}`}>
+                                  Description{" "}
+                                  <span className="text-destructive">*</span>
+                                </Label>
+                                <Textarea
+                                  {...field}
+                                  id={`eventDescription-${index}`}
+                                  placeholder="Describe what happens at this stage..."
+                                  className="min-h-20 resize-none"
+                                />
+                                {errors.eventTimeline?.[index]
+                                  ?.eventDescription && (
+                                  <div className="flex items-center gap-2 text-destructive text-xs">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>
+                                      {
+                                        errors.eventTimeline[index]
+                                          ?.eventDescription?.message
+                                      }
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {errors.eventTimeline &&
+                  typeof errors.eventTimeline.message === "string" && (
+                    <div className="flex items-center gap-2 text-destructive text-sm mt-4">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.eventTimeline.message}</span>
+                    </div>
+                  )}
+              </CardContent>
+            </Card>
+
+            {/* Hosting Fee Notice */}
+            <Card className="border-2 border-primary/30 bg-primary/5">
+              <CardContent className="pt-6">
+                <div className="flex gap-4">
+                  <div className="shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground mb-1">
+                        Hosting Fee Required
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        To host this hackathon, you must pay a hosting fee
+                      </p>
+                    </div>
+                    <div className="bg-background rounded-lg p-4 space-y-2">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-primary">
+                          0.02 ETH
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          hosting fee
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-2 text-foreground">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span>
+                            <span className="font-semibold">80% refunded</span>{" "}
+                            if <span className="font-semibold">100+ teams</span>{" "}
+                            submit projects
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>
+                            Ensures commitment to hosting a successful event
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Submit Button */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-end">
+              {isUploading && (
+                <div className="flex-1">
+                  <div className="bg-muted rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                      <span className="text-sm font-medium">
+                        {uploadStatus}
+                      </span>
+                    </div>
+                    {uploadProgress > 0 && (
+                      <div className="w-full bg-muted-foreground/20 rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {!transactionData && (
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isUploading}
+                  className="min-w-[200px]"
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Preparing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload to IPFS
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {transactionData && (
+                <TransactionButton
+                  transaction={() =>
+                    prepareContractCall({
+                      contract: mainContract,
+                      method:
+                        "function createHackathon(string calldata metadataURI, address[] calldata judges, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 minSponsorshipThreshold) external payable returns (uint256 id)",
+                      params: [
+                        transactionData.metadataUrl,
+                        transactionData.validJudges,
+                        BigInt(transactionData.sponsorshipEndTimestamp),
+                        BigInt(transactionData.hackathonStartTimestamp),
+                        BigInt(transactionData.hackathonEndTimestamp),
+                        transactionData.stakeAmountWei,
+                        transactionData.minTeamMembers,
+                        transactionData.maxTeamMembers,
+                        transactionData.minSponsorshipThresholdWei,
+                      ],
+                      value: transactionData.hostingFeeWei,
+                    })
+                  }
+                  onTransactionSent={(result) => {
+                    console.log("Transaction sent:", result);
+                    toast.info("Transaction submitted to blockchain...");
+                  }}
+                  onTransactionConfirmed={(receipt) => {
+                    console.log("Transaction confirmed:", receipt);
+                    handleTransactionSuccess();
+                  }}
+                  onError={(error) => {
+                    console.error("Transaction error:", error);
+                    handleTransactionError(error);
+                  }}
+                  className="min-w-[200px]"
+                >
+                  Create Hackathon (0.02 ETH)
+                </TransactionButton>
+              )}
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

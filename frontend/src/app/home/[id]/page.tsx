@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { readContract } from "thirdweb";
-import { mainContract } from "@/app/constants/contracts";
+import { mainContract } from "../../../../constants/contracts";
 import {
   Card,
   CardContent,

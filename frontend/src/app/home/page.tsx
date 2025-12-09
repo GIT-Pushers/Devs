@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useReadContract } from "thirdweb/react";
-import { mainContract } from "../constants/contracts";
+import { mainContract } from "@/constants/contracts";
 import {
   Card,
   CardContent,
