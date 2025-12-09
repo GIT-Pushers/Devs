@@ -381,25 +381,28 @@ export default function SubmissionPage() {
                     AI-Detected Technologies
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(analysisResult.ai_detected_tech || {}).map(([category, technologies]) => (
-                      technologies.length > 0 && (
-                        <div key={category} className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-300 capitalize">
-                            {category.replace('_', ' & ')}
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {technologies.map((tech: string, index: number) => (
-                              <span
-                                key={index}
-                                className="px-2 py-1 text-xs rounded bg-purple-600 text-white"
-                              >
-                                {tech}
-                              </span>
-                            ))}
+                    {Object.entries(analysisResult.ai_detected_tech || {}).map(
+                      ([category, technologies]) =>
+                        technologies.length > 0 && (
+                          <div key={category} className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-300 capitalize">
+                              {category.replace("_", " & ")}
+                            </h4>
+                            <div className="flex flex-wrap gap-1">
+                              {technologies.map(
+                                (tech: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="px-2 py-1 text-xs rounded bg-purple-600 text-white"
+                                  >
+                                    {tech}
+                                  </span>
+                                )
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    ))}
+                        )
+                    )}
                   </div>
                 </div>
 

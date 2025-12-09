@@ -15,9 +15,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get the user's GitHub access token from the session
-    // For now, we'll use the environment token as a fallback
-    // In a real implementation, you'd store and retrieve the user's OAuth token
+    // Extract GitHub username - handle display names vs actual GitHub usernames
+    let username;
+    
+    // TODO: Properly implement OAuth access token retrieval
+    // Currently using environment token as fallback
+    // For proper implementation, need to:
+    // 1. Store OAuth access tokens in better-auth database
+    // 2. Retrieve user's GitHub access token from database
+    // 3. Use user's token to fetch their repositories
     const githubToken =
       process.env.GITHUB_TOKEN || process.env.NEXT_PUBLIC_GITHUB_API_KEY;
 
@@ -28,8 +34,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Try to get the user's username from their session or make a call to GitHub
-    let username;
+    // First, try to get the actual GitHub username from the environment token
+    // This is a workaround until proper OAuth token storage is implemented
     try {
       const userResponse = await fetch("https://api.github.com/user", {
         headers: {
@@ -42,14 +48,69 @@ export async function GET(req: NextRequest) {
       if (userResponse.ok) {
         const userData = await userResponse.json();
         username = userData.login;
+        console.log("Using GitHub username from API:", username);
+      } else {
+        console.error("GitHub user API error:", userResponse.status, userResponse.statusText);
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("Error fetching user data from GitHub:", error);
     }
 
-    // If we can't get the real username, use a fallback for mock data
+    // If we couldn't get username from GitHub API, try session data but validate it
+    if (!username && session.user.name) {
+      let sessionUsername = session.user.name.toLowerCase();
+      // Remove spaces and special characters that aren't valid in GitHub usernames
+      sessionUsername = sessionUsername.replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
+      
+      if (sessionUsername && sessionUsername.length > 0) {
+        // Validate by trying to fetch user info
+        try {
+          const testResponse = await fetch(`https://api.github.com/users/${sessionUsername}`, {
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+              Accept: "application/vnd.github+json",
+              "User-Agent": "repo-analyzer",
+            },
+          });
+          
+          if (testResponse.ok) {
+            username = sessionUsername;
+            console.log("Using cleaned session username:", username);
+          }
+        } catch (error) {
+          console.log("Session username validation failed:", error);
+        }
+      }
+    }
+
+    // Try email-based username if still no valid username
+    if (!username && session.user.email) {
+      let emailUsername = session.user.email.split("@")[0].toLowerCase();
+      emailUsername = emailUsername.replace(/[^a-z0-9-]/g, '');
+      
+      if (emailUsername && emailUsername.length > 0) {
+        try {
+          const testResponse = await fetch(`https://api.github.com/users/${emailUsername}`, {
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+              Accept: "application/vnd.github+json",
+              "User-Agent": "repo-analyzer",
+            },
+          });
+          
+          if (testResponse.ok) {
+            username = emailUsername;
+            console.log("Using email-derived username:", username);
+          }
+        } catch (error) {
+          console.log("Email username validation failed:", error);
+        }
+      }
+    }
+
     if (!username) {
-      username = "mockuser";
+      console.log("Could not determine valid GitHub username, using mock data");
+      username = "mockuser"; // This will trigger mock data below
     }
 
     let repositories = [];

@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  baseURL:
+    process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
   basePath: "/api/auth",
   socialProviders: {
     github: {
@@ -10,14 +11,22 @@ export const auth = betterAuth({
       scope: ["user", "repo"], // Request access to user info and repositories
     },
   },
-  // Store additional user data including access tokens
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
   },
-  // Enable account linking to store OAuth tokens
   account: {
     accountLinking: {
       enabled: true,
+      trustedProviders: ["github"],
+    },
+  },
+  callbacks: {
+    async signIn({ user, account }) {
+      // Store additional account information if needed
+      if (account?.provider === "github") {
+        console.log("GitHub sign in with access token");
+      }
+      return true;
     },
   },
 });
