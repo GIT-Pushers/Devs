@@ -5,7 +5,7 @@ import { authClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Github, CheckCircle, ExternalLink } from "lucide-react";
-import GithubLoginButton from "@/components/GithubLoginButton";
+import SignInButton from "@/components/SignInButton";
 
 interface Repository {
   id: number;
@@ -69,6 +69,7 @@ export default function SubmissionPage() {
       try {
         const sessionData = await authClient.getSession();
         setSession(sessionData);
+        console.log("Session Data:", sessionData);
 
         if (sessionData?.data?.session?.id) {
           await fetchRepositories();
@@ -156,7 +157,7 @@ export default function SubmissionPage() {
               Please sign in with GitHub to access your repositories and submit
               them for analysis.
             </p>
-            <GithubLoginButton />
+            <SignInButton />
           </CardContent>
         </Card>
       </div>

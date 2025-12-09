@@ -5,6 +5,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { Header } from "@/components/landing/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,8 +41,8 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Navbar />
-            <div className="pt-16">{children}</div>
+            <Header />
+            <div className="">{children}</div>
             <Toaster />
           </ThemeProvider>
         </body>
