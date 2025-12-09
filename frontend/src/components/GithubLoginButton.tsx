@@ -7,11 +7,15 @@ import { authClient } from "@/lib/client";
 export default function GithubLoginButton() {
   const handleGithubLogin = async () => {
     try {
-      const res = await authClient.signIn.social({
+      await authClient.signIn.social({
         provider: "github",
+        callbackURL: window.location.origin + "/submission", // Full URL for redirect
       });
 
-      console.log("GitHub Login Success:", res);
+      // The redirect should happen automatically, but let's add a small delay and manual check
+      setTimeout(() => {
+        window.location.href = "/submission";
+      }, 1000);
     } catch (err) {
       console.error("GitHub Login Error:", err);
     }
