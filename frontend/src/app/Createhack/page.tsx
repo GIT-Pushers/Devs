@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import lighthouse from "@lighthouse-web3/sdk";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -204,29 +204,28 @@ const CreateHackathonForm = () => {
       console.log("🚀 STARTING HACKATHON CREATION");
       console.log("============================================\n");
 
-      // Validate API Key
-      const API_KEY = process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
+      // Validate Pinata JWT
+      const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT;
 
-      if (!API_KEY) {
+      if (!PINATA_JWT) {
         throw new Error(
-          "Lighthouse API key not found. Please set NEXT_PUBLIC_LIGHTHOUSE_API_KEY in your .env file"
+          "Pinata JWT not found. Please set NEXT_PUBLIC_PINATA_JWT in your .env file"
         );
       }
 
-      console.log("✅ API Key found:", API_KEY.substring(0, 10) + "...");
+      console.log("✅ Pinata JWT found");
 
-      // Step 1: Upload Image to IPFS
-      console.log("📤 Step 1: Uploading image to IPFS...");
+      // Step 1: Upload Image to IPFS via Pinata
+      console.log("📤 Step 1: Uploading image to IPFS via Pinata...");
       setUploadStatus("Uploading image to IPFS...");
 
-      // In browser, lighthouse.upload expects e.target.files (FileList) or file array
       const imageFiles = data.hackathonImage;
 
       if (!imageFiles || imageFiles.length === 0) {
         throw new Error("No image file selected");
       }
 
-      const imageFile = imageFiles[0] || imageFiles;
+      const imageFile = imageFiles[0];
       console.log(
         "Image file:",
         imageFile?.name || "unknown",
@@ -235,36 +234,32 @@ const CreateHackathonForm = () => {
         "bytes"
       );
 
-      const progressCallback = (progressData: unknown) => {
-        const progress = progressData as { uploaded: number; total: number };
-        const percentageDone = (
-          100 - (progress?.total / progress?.uploaded || 0)
-        ).toFixed(2);
-        setUploadProgress(Number(percentageDone));
-        console.log(`Image upload progress: ${percentageDone}%`);
-      };
+      // Upload image to Pinata
+      const imageFormData = new FormData();
+      imageFormData.append("file", imageFile);
 
-      // Pass the FileList or file directly - lighthouse expects e.target.files format
-      console.log("Calling lighthouse.upload with:", {
-        filesCount: imageFiles.length,
-        apiKeyPrefix: API_KEY.substring(0, 10),
-      });
+      const imageUploadResponse = await axios.post(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        imageFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${PINATA_JWT}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            );
+            setUploadProgress(percentCompleted);
+            console.log(`Image upload progress: ${percentCompleted}%`);
+          },
+        }
+      );
 
-      const imageUploadResponse = await lighthouse
-        .upload(imageFiles, API_KEY, false, progressCallback)
-        .catch((err) => {
-          console.error("Lighthouse upload error details:", err);
-          console.error("Error message:", err.message);
-          console.error("Error response:", err.response);
-          throw new Error(
-            `Upload failed: ${err.message}. Please verify your API key is valid. Generate a new one at https://files.lighthouse.storage/`
-          );
-        });
+      console.log("Image upload response:", imageUploadResponse.data);
 
-      console.log("Image upload response:", imageUploadResponse);
-
-      const imageHash = imageUploadResponse.data.Hash;
-      const imageUrl = `https://gateway.lighthouse.storage/ipfs/${imageHash}`;
+      const imageHash = imageUploadResponse.data.IpfsHash;
+      const imageUrl = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
       console.log("✅ Image uploaded successfully!");
       console.log("   CID:", imageHash);
       console.log("   URL:", imageUrl);
@@ -285,40 +280,41 @@ const CreateHackathonForm = () => {
       console.log("Metadata:", JSON.stringify(metadata, null, 2));
       console.log("");
 
-      // Step 3: Upload metadata JSON to IPFS
-      console.log("📤 Step 3: Uploading metadata to IPFS...");
+      // Step 3: Upload metadata JSON to IPFS via Pinata
+      console.log("📤 Step 3: Uploading metadata to IPFS via Pinata...");
       setUploadStatus("Uploading metadata to IPFS...");
 
-      const metadataString = JSON.stringify(metadata);
-      const metadataBlob = new Blob([metadataString], {
+      const metadataBlob = new Blob([JSON.stringify(metadata)], {
         type: "application/json",
       });
       const metadataFile = new File([metadataBlob], "hackathon-metadata.json", {
         type: "application/json",
       });
 
-      // Create a FileList-like structure for the metadata file
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(metadataFile);
-      const metadataFiles = dataTransfer.files;
+      const metadataFormData = new FormData();
+      metadataFormData.append("file", metadataFile);
 
-      const metadataUploadResponse = await lighthouse.upload(
-        metadataFiles,
-        API_KEY,
-        false,
-        (progressData: unknown) => {
-          const progress = progressData as { uploaded: number; total: number };
-          const percentageDone = (
-            100 - (progress?.total / progress?.uploaded || 0)
-          ).toFixed(2);
-          console.log(`Metadata upload progress: ${percentageDone}%`);
+      const metadataUploadResponse = await axios.post(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        metadataFormData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${PINATA_JWT}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            );
+            console.log(`Metadata upload progress: ${percentCompleted}%`);
+          },
         }
       );
 
-      console.log("Metadata upload response:", metadataUploadResponse);
+      console.log("Metadata upload response:", metadataUploadResponse.data);
 
-      const metadataHash = metadataUploadResponse.data.Hash;
-      const metadataUrl = `https://gateway.lighthouse.storage/ipfs/${metadataHash}`;
+      const metadataHash = metadataUploadResponse.data.IpfsHash;
+      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataHash}`;
       console.log("✅ Metadata uploaded successfully!");
       console.log("   CID:", metadataHash);
       console.log("   URL:", metadataUrl);
