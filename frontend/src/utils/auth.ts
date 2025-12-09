@@ -8,7 +8,7 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID as string,
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
-      scope: ["user", "repo"], // Request access to user info and repositories
+      scope: ["user", "repo"],
     },
   },
   session: {
@@ -20,13 +20,11 @@ export const auth = betterAuth({
       trustedProviders: ["github"],
     },
   },
-  callbacks: {
-    async signIn({ user, account }) {
-      // Store additional account information if needed
-      if (account?.provider === "github") {
-        console.log("GitHub sign in with access token");
-      }
-      return true;
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     },
+    redirectURLAfterAuth: "/home",
   },
 });
