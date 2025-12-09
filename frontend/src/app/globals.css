@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 @theme inline {
@@ -57,3 +57,75 @@ body {
     background-position: 0% 50%;
   }
 }
+
+/* Smooth transition when switching themes */
+html, body {
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+/* Ensure .dark on root or documentElement applies variables for descendants */
+.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.btn-primary {
+  background: #f6c85f; /* friendly yellow fallback */
+  background: var(--primary);
+  color: var(--primary-foreground, #000);
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+}
+
+/* Secondary button: requested hex fallback #e8e800 */
+.btn-secondary {
+  background: #e8e800; /* fallback */
+  background: var(--secondary, #e8e800);
+  color: var(--secondary-foreground, #000);
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-theme {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.muted {
+  color: var(--muted-foreground);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.rounded-theme {
+  border-radius: calc(var(--radius, 8px));
+}
+
+/* Small helpers to ensure links/buttons visible on oklch colors */
+a.btn-primary:hover, .btn-primary:hover { filter: brightness(0.95); }
+.btn-ghost:hover { background: rgba(0,0,0,0.03); }
+.btn-secondary:hover { filter: brightness(0.95); }
+
+/* Slightly stronger lift on hover to match primary button feel */
+.btn-secondary:active, .btn-secondary:focus, .btn-secondary:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
