@@ -21,10 +21,10 @@ export default function GithubLoginButton() {
     <Button
       onClick={handleGithubLogin}
       variant="default"
-      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+      className="bg-[#24292e] text-white hover:bg-[#2f363d] flex items-center gap-2 px-4 py-2 text-sm"
     >
-      <Github className="h-5 w-5" />
-      Sign in with GitHub
+      <Github className="h-4 w-4" />
+      Sign in
     </Button>
   );
 }
