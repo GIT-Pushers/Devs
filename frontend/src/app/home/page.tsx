@@ -101,7 +101,7 @@ export default function Home() {
   }, [query, tag, onlyFeatured, sort])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-black antialiased">
+    <main className="min-h-screen bg-linear-to-b from-white to-gray-50 text-black antialiased">
       <header className="border-b border-black/5 bg-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <a href="#" className="flex items-center gap-3">
