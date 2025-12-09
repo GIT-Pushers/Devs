@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { authClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github, CheckCircle, ExternalLink } from "lucide-react";
+import { Github, CheckCircle, ExternalLink, Code, Sparkles } from "lucide-react";
 import SignInButton from "@/components/SignInButton";
 
 interface Repository {
@@ -135,8 +135,8 @@ export default function SubmissionPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -145,15 +145,17 @@ export default function SubmissionPage() {
   if (!session?.data?.session?.id) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-gray-900 border-gray-800">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white flex items-center justify-center gap-2">
-              <Github className="h-6 w-6" />
+        <Card className="w-full max-w-md bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5">
+          <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30 text-center">
+            <CardTitle className="text-2xl text-white flex items-center justify-center gap-3">
+              <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+                <Github className="h-6 w-6 text-primary" />
+              </div>
               GitHub Authentication Required
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-gray-300 text-center">
+          <CardContent className="space-y-4 pt-6">
+            <p className="text-muted-foreground text-center">
               Please sign in with GitHub to access your repositories and submit
               them for analysis.
             </p>
@@ -165,59 +167,69 @@ export default function SubmissionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Repository Submission</h1>
-          <p className="text-gray-300">
+    <div className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
+        {/* Enhanced Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-1.5 w-16 bg-gradient-to-r from-primary to-primary/50"></div>
+            <span className="text-primary text-sm font-bold uppercase tracking-widest">
+              Repository Submission
+            </span>
+            <div className="h-1.5 w-16 bg-gradient-to-r from-primary/50 to-primary"></div>
+          </div>
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">
+            Submit Your Project
+          </h1>
+          <p className="text-xl text-muted-foreground">
             Select a repository from your GitHub account to analyze
           </p>
         </div>
 
         {error && (
-          <Card className="mb-6 bg-red-900/50 border-red-800">
+          <Card className="mb-6 bg-destructive/20 border-2 border-destructive/30">
             <CardContent className="p-4">
-              <p className="text-red-200">{error}</p>
+              <p className="text-destructive font-medium">{error}</p>
             </CardContent>
           </Card>
         )}
 
         {!analysisResult ? (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold mb-4">Your Repositories</h2>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-white mb-6">Your Repositories</h2>
 
             {repositories.length === 0 ? (
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="p-8 text-center">
-                  <Github className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-300">No repositories found</p>
+              <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20">
+                <CardContent className="p-12 text-center">
+                  <Github className="h-16 w-16 text-primary mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground text-lg">No repositories found</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {repositories.map((repo) => (
                   <Card
                     key={repo.id}
-                    className="bg-gray-900 border-gray-800 hover:border-blue-500 transition-colors cursor-pointer"
+                    className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 cursor-pointer"
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b-2 border-primary/30 pb-3">
                       <CardTitle className="text-lg text-white flex items-start justify-between">
-                        <span className="truncate">{repo.name}</span>
+                        <span className="truncate font-bold">{repo.name}</span>
                         {repo.private && (
-                          <span className="text-xs bg-yellow-600 px-2 py-1 rounded text-black">
+                          <span className="text-xs bg-primary/20 text-primary border border-primary/30 px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2">
                             Private
                           </span>
                         )}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-gray-300 line-clamp-2">
+                    <CardContent className="space-y-4 pt-4">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
                         {repo.description || "No description available"}
                       </p>
 
-                      <div className="flex items-center justify-between text-sm text-gray-400">
-                        <span>{repo.language || "Unknown"}</span>
-                        <span className="flex items-center gap-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-primary font-medium">{repo.language || "Unknown"}</span>
+                        <span className="flex items-center gap-1 text-muted-foreground">
                           ⭐ {repo.stargazers_count}
                         </span>
                       </div>
@@ -226,7 +238,7 @@ export default function SubmissionPage() {
                         <Button
                           onClick={() => handleAnalyzeRepository(repo)}
                           disabled={analyzing}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
+                          className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold"
                           size="sm"
                         >
                           {analyzing && selectedRepo?.id === repo.id ? (
@@ -242,7 +254,7 @@ export default function SubmissionPage() {
                           asChild
                           variant="outline"
                           size="sm"
-                          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                          className="border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10"
                         >
                           <a
                             href={repo.html_url}
@@ -262,176 +274,188 @@ export default function SubmissionPage() {
         ) : (
           <div className="space-y-6">
             {/* Analysis Results */}
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-2xl text-white flex items-center gap-2">
-                  <CheckCircle className="h-6 w-6 text-green-500" />
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5">
+              <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+                <CardTitle className="text-2xl text-white flex items-center gap-3">
+                  <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+                    <CheckCircle className="h-6 w-6 text-primary" />
+                  </div>
                   Analysis Complete: {analysisResult.repo}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 {/* Trust Score */}
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-blue-400 mb-2">
+                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/30">
+                  <div className="text-5xl font-extrabold text-white mb-2">
                     {Math.round(analysisResult.trust_score * 100) / 100}/100
                   </div>
-                  <p className="text-gray-300">Trust Score</p>
+                  <p className="text-muted-foreground font-semibold uppercase tracking-wide">Trust Score</p>
                 </div>
 
                 {/* Score Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-white">
-                      Score Breakdown
-                    </h3>
-                    {Object.entries(analysisResult.explanations).map(
-                      ([key, explanation]) => (
-                        <div key={key} className="text-sm">
-                          <span className="text-gray-300 capitalize">
-                            {key}:
-                          </span>
-                          <span className="text-gray-200 ml-2">
-                            {explanation}
-                          </span>
-                        </div>
-                      )
-                    )}
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white">Score Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {Object.entries(analysisResult.explanations).map(
+                        ([key, explanation]) => (
+                          <div key={key} className="text-sm">
+                            <span className="text-muted-foreground font-semibold uppercase tracking-wide capitalize">
+                              {key}:
+                            </span>
+                            <span className="text-white ml-2">
+                              {explanation}
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </CardContent>
+                  </Card>
 
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-white">
-                      Repository Stats
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-300">Commits:</span>{" "}
-                        <span className="text-gray-200 ml-2">
+                  <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white">Repository Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground font-semibold">Commits:</span>
+                        <span className="text-white font-bold">
                           {analysisResult.commits_count}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-300">Files:</span>{" "}
-                        <span className="text-gray-200 ml-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground font-semibold">Files:</span>
+                        <span className="text-white font-bold">
                           {analysisResult.file_count}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-300">Owner:</span>{" "}
-                        <span className="text-gray-200 ml-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground font-semibold">Owner:</span>
+                        <span className="text-white font-bold">
                           {analysisResult.owner}
                         </span>
                       </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Technology Detection */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    Technology Detection
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-md font-medium text-gray-300 mb-2">
-                        Found in README
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(
-                          analysisResult.detected_tech_in_readme
-                        ).map(([tech, detected]) => (
-                          <span
-                            key={tech}
-                            className={`px-2 py-1 text-xs rounded ${
-                              detected
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-700 text-gray-300"
-                            }`}
-                          >
-                            {tech}
-                          </span>
-                        ))}
+                <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white">Technology Detection</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-3">
+                          Found in README
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(
+                            analysisResult.detected_tech_in_readme
+                          ).map(([tech, detected]) => (
+                            <span
+                              key={tech}
+                              className={`px-3 py-1 text-xs rounded-full font-medium border ${
+                                detected
+                                  ? "bg-primary/20 text-primary border-primary/30"
+                                  : "bg-muted/20 text-muted-foreground border-border"
+                              }`}
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-3">
+                          Found in Code
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(
+                            analysisResult.detected_tech_in_code
+                          ).map(([tech, detected]) => (
+                            <span
+                              key={tech}
+                              className={`px-3 py-1 text-xs rounded-full font-medium border ${
+                                detected
+                                  ? "bg-primary/20 text-primary border-primary/30"
+                                  : "bg-muted/20 text-muted-foreground border-border"
+                              }`}
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h4 className="text-md font-medium text-gray-300 mb-2">
-                        Found in Code
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(
-                          analysisResult.detected_tech_in_code
-                        ).map(([tech, detected]) => (
-                          <span
-                            key={tech}
-                            className={`px-2 py-1 text-xs rounded ${
-                              detected
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-700 text-gray-300"
-                            }`}
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* AI-Detected Technologies */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white">
-                    AI-Detected Technologies
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(analysisResult.ai_detected_tech || {}).map(
-                      ([category, technologies]) =>
-                        technologies.length > 0 && (
-                          <div key={category} className="space-y-2">
-                            <h4 className="text-sm font-medium text-gray-300 capitalize">
-                              {category.replace("_", " & ")}
-                            </h4>
-                            <div className="flex flex-wrap gap-1">
-                              {technologies.map(
-                                (tech: string, index: number) => (
-                                  <span
-                                    key={index}
-                                    className="px-2 py-1 text-xs rounded bg-purple-600 text-white"
-                                  >
-                                    {tech}
-                                  </span>
-                                )
-                              )}
+                <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white">AI-Detected Technologies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {Object.entries(analysisResult.ai_detected_tech || {}).map(
+                        ([category, technologies]) =>
+                          technologies.length > 0 && (
+                            <div key={category} className="space-y-2">
+                              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                                {category.replace("_", " & ")}
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {technologies.map(
+                                  (tech: string, index: number) => (
+                                    <span
+                                      key={index}
+                                      className="px-2 py-1 text-xs rounded-full bg-primary/20 text-primary border border-primary/30 font-medium"
+                                    >
+                                      {tech}
+                                    </span>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )
-                    )}
-                  </div>
-                </div>
+                          )
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Fraud Detection */}
                 {analysisResult.fraud_reasons.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-red-400">
-                      Issues Detected
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
-                      {analysisResult.fraud_reasons.map((reason, index) => (
-                        <li key={index}>{reason}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  <Card className="bg-destructive/20 border-2 border-destructive/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-destructive">Issues Detected</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                        {analysisResult.fraud_reasons.map((reason, index) => (
+                          <li key={index} className="text-white">{reason}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* AI Summary */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    AI Analysis Summary
-                  </h3>
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
-                      {analysisResult.ai_summary}
-                    </p>
-                  </div>
-                </div>
+                <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white">AI Analysis Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-black/60 p-4 rounded-lg border border-primary/10">
+                      <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
+                        {analysisResult.ai_summary}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-4">
@@ -442,11 +466,11 @@ export default function SubmissionPage() {
                       setError("");
                     }}
                     variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                    className="border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-semibold"
                   >
                     Analyze Another Repository
                   </Button>
-                  <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                  <Button asChild className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/30 border-2 border-primary/40">
                     <a
                       href={selectedRepo?.html_url}
                       target="_blank"
