@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import WalletConnectionButton from "@/components/WalletConnectionButton";
 import AuthButton from "@/components/AuthButton";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const router = useRouter();
+  
   return (
     <motion.header
       className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95"
@@ -19,7 +22,14 @@ export function Header() {
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 400 }}
         >
-          <Link href="/" className="text-2xl font-bold text-foreground">
+          <Link 
+            href="/" 
+            className="text-2xl font-bold text-foreground"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/");
+            }}
+          >
             HACKX
           </Link>
         </motion.div>

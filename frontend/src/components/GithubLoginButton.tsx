@@ -25,7 +25,7 @@ export default function GithubLoginButton() {
     <Button
       onClick={handleGithubLogin}
       variant="default"
-      className="bg-[#24292e] text-white hover:bg-[#2f363d] flex items-center gap-2 px-4 py-2 text-sm"
+      className="bg-white text-black hover:bg-gray-100 flex items-center gap-2 px-4 py-2 text-sm"
     >
       <Github className="h-4 w-4" />
       Sign in
