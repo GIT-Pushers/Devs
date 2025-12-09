@@ -1,370 +1,308 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import { useReadContract } from "thirdweb/react";
+import { mainContract } from "@/constants/contracts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { readContract } from "thirdweb";
+import { useRouter } from "next/navigation";
+import { Calendar, Users, Coins, Trophy, ArrowRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-import React, { useMemo, useState } from "react";
-import { mainContract } from "../constants/contracts";
-import UserProfile from "@/components/UserProfile";
+interface Hackathon {
+  id: bigint;
+  organizer: string;
+  sponsorshipStart: bigint;
+  sponsorshipEnd: bigint;
+  hackStart: bigint;
+  hackEnd: bigint;
+  stakeAmount: bigint;
+  minTeams: number;
+  maxTeams: number;
+  creationFee: bigint;
+  creationFeeRefunded: boolean;
+  metadataURI: string;
+  totalSponsorshipAmount: bigint;
+  minSponsorshipThreshold: bigint;
+  finalized: boolean;
+}
 
-type Hack = {
-  id: string;
-  title: string;
-  dates: string;
-  startDate: string;
-  endDate: string;
-  desc: string;
-  tags: string[];
-  register: { type: string; href: string }[];
-  featured: boolean;
-  location: string;
+const HackathonDisplayPage = () => {
+  const router = useRouter();
+  const { data: hackathonCount, isPending: isCountPending } = useReadContract({
+    contract: mainContract,
+    method: "function hackathonCount() view returns (uint256)",
+    params: [],
+  });
+
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [isLoadingHackathons, setIsLoadingHackathons] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      if (!hackathonCount || hackathonCount === BigInt(0)) return;
+
+      setIsLoadingHackathons(true);
+      const count = Number(hackathonCount);
+      const fetchedHackathons: Hackathon[] = [];
+
+      for (let i = 0; i < count; i++) {
+        try {
+          const hackathonData = await readContract({
+            contract: mainContract,
+            method:
+              "function hackathons(uint256) view returns (uint256 id, address organizer, uint256 sponsorshipStart, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 creationFee, bool creationFeeRefunded, string metadataURI, uint256 totalSponsorshipAmount, uint256 minSponsorshipThreshold, bool finalized)",
+            params: [BigInt(i)],
+          });
+
+          fetchedHackathons.push({
+            id: hackathonData[0],
+            organizer: hackathonData[1],
+            sponsorshipStart: hackathonData[2],
+            sponsorshipEnd: hackathonData[3],
+            hackStart: hackathonData[4],
+            hackEnd: hackathonData[5],
+            stakeAmount: hackathonData[6],
+            minTeams: hackathonData[7],
+            maxTeams: hackathonData[8],
+            creationFee: hackathonData[9],
+            creationFeeRefunded: hackathonData[10],
+            metadataURI: hackathonData[11],
+            totalSponsorshipAmount: hackathonData[12],
+            minSponsorshipThreshold: hackathonData[13],
+            finalized: hackathonData[14],
+          });
+
+          setLoadingProgress(((i + 1) / count) * 100);
+        } catch (error) {
+          console.error(`Error fetching hackathon ${i}:`, error);
+        }
+      }
+
+      setHackathons(fetchedHackathons);
+      setIsLoadingHackathons(false);
+    };
+
+    fetchHackathons();
+  }, [hackathonCount]);
+
+  const formatDate = (timestamp: bigint) => {
+    return new Date(Number(timestamp) * 1000).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatEther = (wei: bigint) => {
+    return (Number(wei) / 1e18).toFixed(4);
+  };
+
+  if (isCountPending) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">
+            Loading hackathon count...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (hackathonCount === BigInt(0)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-center">
+          <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-2 text-white">No Hackathons Yet</h2>
+          <p className="text-muted-foreground text-lg">
+            Be the first to create a hackathon!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Enhanced Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-1 w-12 bg-primary"></div>
+            <span className="text-primary text-sm font-semibold uppercase tracking-wider">
+              Active Hackathons
+            </span>
+          </div>
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            Discover & Compete
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            {hackathonCount?.toString()} active hackathon{hackathonCount !== BigInt(1) ? 's' : ''} ready for you
+          </p>
+        </div>
+
+        {isLoadingHackathons && (
+          <div className="mb-12">
+            <div className="w-full bg-muted/20 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-primary to-primary/60 h-3 rounded-full transition-all duration-300 shadow-lg shadow-primary/20"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3 text-center">
+              Loading hackathons... {Math.round(loadingProgress)}%
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hackathons.map((hackathon, index) => {
+            const isActive = Number(hackathon.hackStart) * 1000 <= Date.now() && Number(hackathon.hackEnd) * 1000 >= Date.now();
+            
+            return (
+              <Card
+                key={index}
+                className="group flex flex-col bg-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 overflow-hidden"
+              >
+                {/* Card Header with Gradient */}
+                <CardHeader className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b border-border/50 pb-3 pt-4 px-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg font-bold text-white mb-0.5">
+                        Hackathon #{hackathon.id.toString()}
+                      </CardTitle>
+                      <CardDescription className="text-[10px] text-muted-foreground truncate">
+                        {hackathon.organizer.slice(0, 6)}...{hackathon.organizer.slice(-4)}
+                      </CardDescription>
+                    </div>
+                    {hackathon.finalized ? (
+                      <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                        Finalized
+                      </span>
+                    ) : isActive ? (
+                      <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-full font-medium animate-pulse flex-shrink-0">
+                        Active
+                      </span>
+                    ) : null}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="flex-grow space-y-2.5 pt-3 px-4">
+                  {/* Sponsorship Period */}
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/10 border border-border/30">
+                    <Calendar className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                        Sponsorship
+                      </p>
+                      <p className="text-xs text-white font-medium leading-tight">
+                        {formatDate(hackathon.sponsorshipStart)} - {formatDate(hackathon.sponsorshipEnd)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Hackathon Period */}
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/10 border border-border/30">
+                    <Trophy className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                        Hackathon
+                      </p>
+                      <p className="text-xs text-white font-medium leading-tight">
+                        {formatDate(hackathon.hackStart)} - {formatDate(hackathon.hackEnd)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Users className="h-3 w-3 text-primary" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Teams</p>
+                      </div>
+                      <p className="text-sm font-bold text-white">
+                        {hackathon.minTeams} - {hackathon.maxTeams}
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Coins className="h-3 w-3 text-primary" />
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Stake</p>
+                      </div>
+                      <p className="text-sm font-bold text-white">
+                        {formatEther(hackathon.stakeAmount)} ETH
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Prize Pool Highlight */}
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
+                    <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wide mb-1">
+                      Total Prize Pool
+                    </p>
+                    <p className="text-lg font-bold text-white mb-0.5">
+                      {formatEther(hackathon.totalSponsorshipAmount)} ETH
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Min: {formatEther(hackathon.minSponsorshipThreshold)} ETH
+                    </p>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="pt-0 px-4 pb-4">
+                  <Button
+                    onClick={() => router.push(`/home/${hackathon.id.toString()}`)}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm py-2 h-9 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300"
+                  >
+                    View Details
+                    <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+
+          {isLoadingHackathons &&
+            Array.from({
+              length: Number(hackathonCount) - hackathons.length,
+            }).map((_, index) => (
+              <Card
+                key={`skeleton-${index}`}
+                className="flex flex-col animate-pulse bg-card border-border/50"
+              >
+                <CardHeader className="bg-muted/10 pb-3 pt-4 px-4">
+                  <div className="h-5 bg-muted/30 rounded w-3/4 mb-1"></div>
+                  <div className="h-3 bg-muted/30 rounded w-full"></div>
+                </CardHeader>
+                <CardContent className="space-y-2.5 pt-3 px-4">
+                  <div className="h-12 bg-muted/20 rounded-lg"></div>
+                  <div className="h-12 bg-muted/20 rounded-lg"></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="h-14 bg-muted/20 rounded-lg"></div>
+                    <div className="h-14 bg-muted/20 rounded-lg"></div>
+                  </div>
+                  <div className="h-16 bg-muted/20 rounded-lg"></div>
+                </CardContent>
+                <CardFooter className="px-4 pb-4">
+                  <div className="h-9 bg-muted/30 rounded w-full"></div>
+                </CardFooter>
+              </Card>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-const sampleHackathons: Hack[] = [
-  {
-    id: "h1",
-    title: "InnovateCode 2025",
-    dates: "Dec 20 — Dec 22, 2025",
-    startDate: "2025-12-20",
-    endDate: "2025-12-22",
-    desc: "A weekend of rapid prototyping and open-source showcases.",
-    tags: ["open-source", "web"],
-    register: [
-      { type: "GitHub", href: "#" },
-      { type: "Google Form", href: "#" },
-    ],
-    featured: true,
-    location: "Online",
-  },
-  {
-    id: "h2",
-    title: "Web3 Builders Jam",
-    dates: "Jan 10 — Jan 12, 2026",
-    startDate: "2026-01-10",
-    endDate: "2026-01-12",
-    desc: "Build blockchain-integrated apps and demos.",
-    tags: ["blockchain", "eth"],
-    register: [
-      { type: "Repo Link", href: "#" },
-      { type: "Direct Upload", href: "#" },
-    ],
-    featured: false,
-    location: "Hybrid",
-  },
-  {
-    id: "h3",
-    title: "AI for Good Sprint",
-    dates: "Feb 7 — Feb 9, 2026",
-    startDate: "2026-02-07",
-    endDate: "2026-02-09",
-    desc: "Show how AI can make an impact — projects welcome.",
-    tags: ["ai", "social-impact"],
-    register: [
-      { type: "GitHub", href: "#" },
-      { type: "Slack Signup", href: "#" },
-    ],
-    featured: false,
-    location: "Online",
-  },
-];
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="px-2 py-1 text-xs font-medium rounded-full border border-[var(--border)] bg-[var(--muted)]">
-      {children}
-    </span>
-  );
-}
-
-function IconSearch() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M21 21l-4.35-4.35"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="11"
-        cy="11"
-        r="6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-export default function Home() {
-  const [query, setQuery] = useState("");
-  const [tag, setTag] = useState("All");
-  const [onlyFeatured, setOnlyFeatured] = useState(false);
-  const [sort, setSort] = useState<"upcoming" | "newest" | "featured">(
-    "upcoming"
-  );
-
-  const tags = useMemo(() => {
-    const s = new Set(sampleHackathons.flatMap((h) => h.tags));
-    return ["All", ...Array.from(s)];
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = sampleHackathons.filter((h) => {
-      if (onlyFeatured && !h.featured) return false;
-      if (tag !== "All" && !h.tags.includes(tag)) return false;
-      if (!q) return true;
-      return [h.title, h.desc, h.tags.join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(q);
-    });
-
-    if (sort === "upcoming") {
-      list.sort(
-        (a, b) =>
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-      );
-    } else if (sort === "newest") {
-      list.sort(
-        (a, b) =>
-          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      );
-    } else if (sort === "featured") {
-      list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-    }
-
-    return list;
-  }, [query, tag, onlyFeatured, sort]);
-  console.log(mainContract);
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[var(--card)] text-[var(--foreground)] antialiased">
-      <header className="border-b border-[var(--border)] bg-[var(--background)]">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--secondary-foreground)] text-lg font-bold shadow-md ring-1 ring-[var(--border)]">
-              HX
-            </div>
-            <span className="font-semibold">HackX</span>
-          </a>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm text-[var(--muted-foreground)]">
-            <a href="#" className="hover:text-[var(--foreground)]">
-              Home
-            </a>
-            <a href="#hackathons" className="hover:text-[var(--foreground)]">
-              Discover
-            </a>
-            <a href="#about" className="hover:text-[var(--foreground)]">
-              About
-            </a>
-          </nav>
-
-          <div className="hidden md:flex items-center gap-3">
-            <UserProfile />
-
-            <div className="md:hidden">
-              <button
-                aria-label="Open menu"
-                className="px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-[var(--foreground)]"
-              >
-                Menu
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <section className="container mx-auto px-6 py-8">
-        {/* Top-centered search bar */}
-        <div className="max-w-3xl mx-auto">
-          <div className="relative">
-            <div className="flex items-center gap-3 border border-[var(--border)] rounded-full px-4 py-2 shadow-sm bg-[var(--background)]">
-              <IconSearch />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search events, tags, descriptions..."
-                className="flex-1 outline-none text-sm bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
-                aria-label="Search hackathons"
-              />
-              <select
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                className="border-l border-[var(--border)] pl-3 text-sm bg-[var(--background)] text-[var(--foreground)]"
-              >
-                {tags.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-10">
-          <div className="grid grid-cols-1 gap-8">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                Find hackathons, join communities, ship projects.
-              </h1>
-              <p className="mt-4 text-[var(--muted-foreground)] max-w-2xl">
-                HackX is a curated home for hackathons and developer communities
-                — discover upcoming events, submit repos for automated checks,
-                and connect with mentors.
-              </p>
-
-              <div className="mt-6 flex gap-3 flex-wrap">
-                <a
-                  href="#hackathons"
-                  className="inline-flex items-center gap-2 px-5 py-3 btn-primary font-medium"
-                >
-                  Explore Hackathons
-                </a>
-                <a
-                  href="#community"
-                  className="inline-flex items-center gap-2 px-5 py-3 btn-secondary font-medium"
-                >
-                  Community
-                </a>
-              </div>
-
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card
-                  title="Automated Checks"
-                  desc="Commit history, contributor checks and plagiarism scanning."
-                />
-                <Card
-                  title="Mentors & Prizes"
-                  desc="Find mentors and prize tracks tailored to your tech stack."
-                />
-                <Card
-                  title="Community"
-                  desc="Active Discords, Meetups and open office hours."
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="hackathons" className="mt-12">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Upcoming Hackathons</h2>
-            <div className="text-sm text-[var(--muted-foreground)]">
-              Curated — updated weekly
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((h) => (
-              <EventCard key={h.id} h={h} />
-            ))}
-          </div>
-        </div>
-
-        <footer className="mt-16 border-t border-[var(--border)] pt-8 pb-12 text-sm text-[var(--muted-foreground)]">
-          <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>© {new Date().getFullYear()} HackX — Built for builders.</div>
-            <div className="flex gap-4">
-              <a href="#" className="hover:text-[var(--foreground)]">
-                Privacy
-              </a>
-              <a href="#" className="hover:text-[var(--foreground)]">
-                Terms
-              </a>
-              <a href="#" className="hover:text-[var(--foreground)]">
-                Contact
-              </a>
-            </div>
-          </div>
-        </footer>
-      </section>
-    </main>
-  );
-}
-
-function Card({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="p-4 border border-[var(--border)] rounded-xl bg-[var(--card)]">
-      <h4 className="font-semibold">{title}</h4>
-      <p className="mt-1 text-sm text-[var(--muted-foreground)]">{desc}</p>
-    </div>
-  );
-}
-
-function MiniCard({ h }: { h: Hack }) {
-  return (
-    <div className="mt-3 p-3 border border-[var(--border)] rounded-xl flex items-start gap-3 bg-[var(--card)]">
-      <div className="flex-1">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">{h.title}</div>
-          <div className="text-xs text-[var(--muted-foreground)]">{h.dates}</div>
-        </div>
-        <div className="text-xs text-[var(--muted-foreground)] mt-1">{h.desc}</div>
-      </div>
-    </div>
-  );
-}
-
-function EventCard({ h }: { h: Hack }) {
-  return (
-    <article className="p-6 border border-[var(--border)] rounded-xl bg-[var(--card)] shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold">{h.title}</h3>
-          <div className="text-sm text-[var(--muted-foreground)]">
-            {h.dates} · {h.location}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          {h.featured && <Badge>Featured</Badge>}
-          <div className="text-xs text-[var(--muted-foreground)]">{h.tags.join(", ")}</div>
-        </div>
-      </div>
-
-      <p className="mt-3 text-[var(--muted-foreground)]">{h.desc}</p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {h.register.map((r, idx) => (
-          <a
-            key={idx}
-            href={r.href}
-            className="px-3 py-2 border border-[var(--border)] rounded-md text-sm transition btn-secondary"
-          >
-            Register ({r.type})
-          </a>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function CommunityCard({
-  name,
-  members,
-  activity,
-}: {
-  name: string;
-  members: number;
-  activity: string;
-}) {
-  return (
-    <div className="p-4 border border-[var(--border)] rounded-xl bg-[var(--card)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-medium">{name}</div>
-          <div className="text-xs text-[var(--muted-foreground)]">
-            {activity} · {members.toLocaleString()} members
-          </div>
-        </div>
-        <div className="text-sm">
-          <a href="#" className="px-3 py-1 border border-[var(--border)] rounded">
-            Join
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+export default HackathonDisplayPage;
