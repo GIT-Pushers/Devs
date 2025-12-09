@@ -143,34 +143,11 @@ export default function JoinTeamPage() {
       <div className="max-w-4xl mx-auto">
         <header className="border-b border-[var(--border)] bg-[var(--background)]">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--secondary-foreground)] text-lg font-bold shadow-md ring-1 ring-[var(--border)]">HX</div>
-            <span className="font-semibold text-[var(--foreground)]" >HackX</span>
-          </a>
+          
 
-          <nav className="hidden md:flex items-center gap-6 text-sm text-[var(--muted-foreground)]">
-            <a href="#" className="hover:text-[var(--foreground)]">Home</a>
-            <a href="#hackathons" className="hover:text-[var(--foreground)]">Discover</a>
-            <a href="#about" className="hover:text-[var(--foreground)]">About</a>
-          </nav>
+         
 
-          <div className="hidden md:flex items-center gap-3">
-            <button aria-label="Notifications" className="relative p-2 rounded-md hover:bg-[var(--muted)]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[var(--destructive)] rounded-full ring-2 ring-[var(--background)]" />
-            </button>
-
-            <button aria-label="Profile" className="w-9 h-9 rounded-full bg-[var(--muted)] flex items-center justify-center text-sm font-medium">
-              <span>U</span>
-            </button>
-
-            <div className="md:hidden">
-              <button aria-label="Open menu" className="px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-[var(--foreground)]">Menu</button>
-            </div>
-          </div>
+          
         </div>
       </header>
 
