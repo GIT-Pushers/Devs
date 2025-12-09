@@ -22,6 +22,8 @@ export const CreateTeamForm: React.FC = () => {
     image: null,
   });
 
+  const [showJoinCode, setShowJoinCode] = useState(false);
+
   const [errors, setErrors] = useState<Partial<Record<keyof TeamFormData, string>>>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
@@ -45,10 +47,10 @@ export const CreateTeamForm: React.FC = () => {
     if (!validate()) return;
 
     setStatus('submitting');
-    
+
     // Simulate network delay for better UX
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     setStatus('success');
   };
 
@@ -60,7 +62,7 @@ export const CreateTeamForm: React.FC = () => {
 
   if (status === 'success') {
     return (
-      <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 text-center max-w-lg mx-auto">
+      <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 text-center max-w-lg mx-auto overflow-hidden">
         <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
           <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-primary/30">
             <CheckCircle2 className="w-8 h-8 text-primary" />
@@ -85,7 +87,7 @@ export const CreateTeamForm: React.FC = () => {
              </div>
           </div>
 
-          <Button onClick={resetForm} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40">
+          <Button onClick={resetForm} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer">
             Create Another Team
           </Button>
         </CardContent>
@@ -94,7 +96,7 @@ export const CreateTeamForm: React.FC = () => {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-2xl mx-auto">
+    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-2xl mx-auto overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
         <CardTitle className="flex items-center gap-3 text-white text-2xl">
           <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -145,7 +147,7 @@ export const CreateTeamForm: React.FC = () => {
               {errors.image && <p className="text-destructive text-sm mt-2 font-medium">{errors.image}</p>}
             </div>
 
-            <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
+            <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-white text-lg">
                   <div className="p-1.5 bg-primary/20 rounded-lg border border-primary/30">
@@ -186,7 +188,7 @@ export const CreateTeamForm: React.FC = () => {
           <div className="pt-4">
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
               disabled={status === 'submitting'}
             >
               {status === 'submitting' ? 'Creating Team...' : 'Create Team'}

@@ -53,7 +53,7 @@ function JoinTeamForm({ onJoin }: { onJoin: (team: Team) => void }) {
 }
     
 return (
-    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-xl">
+    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-xl overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
         <CardTitle className="flex items-center gap-3 text-white text-xl">
           <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -97,7 +97,7 @@ return (
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               type="submit"
-              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/30 border-2 border-primary/40"
+              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
               aria-live="polite"
             >
               {status.state === "loading" ? (
@@ -148,8 +148,8 @@ export default function JoinTeamPage() {
   const [joined, setJoined] = useState<Team | null>(null)
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
+    <main className="min-h-screen bg-black text-white overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl overflow-hidden">
         {/* Enhanced Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
@@ -177,8 +177,8 @@ export default function JoinTeamPage() {
             />
           </div>
             
-          <aside className="lg:col-span-1 space-y-6">
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5">
+          <aside className="lg:col-span-1 space-y-6 overflow-hidden">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="text-white">Why join via code?</CardTitle>
               </CardHeader>
@@ -204,7 +204,7 @@ export default function JoinTeamPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="text-white">Joined Team</CardTitle>
               </CardHeader>

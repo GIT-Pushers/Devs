@@ -6,8 +6,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black flex flex-col font-sans">
       {/* Main Content */}
-      <main className="grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div className="max-w-4xl mx-auto">
+      <main className="grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 overflow-hidden">
+        <div className="max-w-4xl mx-auto overflow-hidden">
           {/* Enhanced Header */}
           <div className="mb-12 text-center">
             <div className="flex items-center justify-center gap-3 mb-6">

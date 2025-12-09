@@ -178,8 +178,8 @@ export default function HackathonDetailPage() {
     <div className="min-h-screen bg-black">
       {/* Hero Header Section */}
       <div className="relative overflow-hidden border-b border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-7xl relative z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 overflow-hidden"></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-7xl relative z-10 overflow-hidden">
           <Button
             variant="ghost"
             onClick={() => router.push("/home")}
@@ -236,14 +236,14 @@ export default function HackathonDetailPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl overflow-hidden">
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 overflow-hidden">
             {/* Organizer Card */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="flex items-center gap-3 text-white text-xl">
                   <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -289,7 +289,7 @@ export default function HackathonDetailPage() {
             </Card>
 
             {/* Timeline Card */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="flex items-center gap-3 text-white text-xl">
                   <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -364,7 +364,7 @@ export default function HackathonDetailPage() {
             </Card>
 
             {/* Fees and Refunds */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="flex items-center gap-3 text-white text-xl">
                   <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -405,9 +405,9 @@ export default function HackathonDetailPage() {
           </div>
 
           {/* Right Column - Stats */}
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-hidden">
             {/* Sponsorship Stats */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="text-white text-xl">Sponsorship</CardTitle>
                 <CardDescription className="text-muted-foreground">Funding details</CardDescription>
@@ -456,7 +456,7 @@ export default function HackathonDetailPage() {
             </Card>
 
             {/* Team Information */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="flex items-center gap-3 text-white text-xl">
                   <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
@@ -500,14 +500,14 @@ export default function HackathonDetailPage() {
             </Card>
 
             {/* Actions */}
-            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
                 <CardTitle className="text-white text-xl">Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-6">
                 <Button 
                   onClick={() => router.push("/CreateTeam")}
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40"
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
                 >
                   <UserPlus className="mr-2 h-5 w-5" />
                   Create Team
@@ -515,16 +515,19 @@ export default function HackathonDetailPage() {
                 <Button 
                   onClick={() => router.push("/jointeam")}
                   variant="outline" 
-                  className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base"
+                  className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
                 >
                   <Key className="mr-2 h-5 w-5" />
                   Join Team
                 </Button>
-                <Button variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base">
+                <Button 
+                 
+                 onClick={() => router.push("/sponsor")}
+                 variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer">
                   <Coins className="mr-2 h-5 w-5" />
                   Sponsor Hackathon
                 </Button>
-                <Button variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base">
+                <Button variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer">
                   <Users className="mr-2 h-5 w-5" />
                   View Participants
                 </Button>
