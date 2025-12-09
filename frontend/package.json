@@ -12,7 +12,8 @@
     "@google/generative-ai": "^0.24.1",
     "next": "16.0.8",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "thirdweb": "^5.115.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
