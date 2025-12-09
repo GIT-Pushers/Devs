@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { Key, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Key, CheckCircle2, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -20,6 +20,8 @@ export const CreateTeamForm: React.FC = () => {
     joinCode: '',
     image: null,
   });
+
+  const [showJoinCode, setShowJoinCode] = useState(false);
 
   const [errors, setErrors] = useState<Partial<Record<keyof TeamFormData, string>>>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -44,10 +46,10 @@ export const CreateTeamForm: React.FC = () => {
     if (!validate()) return;
 
     setStatus('submitting');
-    
+
     // Simulate network delay for better UX
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     setStatus('success');
   };
 
@@ -69,16 +71,16 @@ export const CreateTeamForm: React.FC = () => {
         </p>
 
         <div className="bg-secondary rounded-lg p-4 text-left space-y-3 mb-8 border border-border">
-           <div className="flex justify-between items-center">
-             <span className="text-sm font-medium text-muted-foreground">Team Name</span>
-             <span className="text-sm font-bold text-foreground">{formData.name}</span>
-           </div>
-           <div className="flex justify-between items-center">
-             <span className="text-sm font-medium text-muted-foreground">Status</span>
-             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
-               Active
-             </span>
-           </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-muted-foreground">Team Name</span>
+            <span className="text-sm font-bold text-foreground">{formData.name}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-muted-foreground">Status</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+              Active
+            </span>
+          </div>
         </div>
 
         <Button onClick={resetForm} className="w-full">
@@ -99,7 +101,7 @@ export const CreateTeamForm: React.FC = () => {
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Team Name</label>
-            <Input 
+            <Input
               placeholder="e.g. The Code Warriors"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -119,7 +121,7 @@ export const CreateTeamForm: React.FC = () => {
 
           <div>
             <label className="block bg-background text-sm font-medium text-foreground mb-2">Team Image</label>
-            <FileUploader 
+            <FileUploader
               value={formData.image}
               onChange={(file) => setFormData(prev => ({ ...prev, image: file }))}
             />
@@ -133,13 +135,22 @@ export const CreateTeamForm: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Join Code</label>
-              <Input 
-                type="password"
-                placeholder="••••••••"
-                value={formData.joinCode}
-                onChange={(e) => setFormData(prev => ({ ...prev, joinCode: e.target.value }))}
-                className="bg-background"
-              />
+              <div className="relative">
+                <Input
+                  type={showJoinCode ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.joinCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, joinCode: e.target.value }))}
+                  className="bg-background pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowJoinCode(!showJoinCode)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showJoinCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.joinCode && <p className="text-destructive text-sm mt-1">{errors.joinCode}</p>}
             </div>
             <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
@@ -149,23 +160,25 @@ export const CreateTeamForm: React.FC = () => {
           </div>
         </div>
 
-        {status === 'error' && (
-          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3 text-destructive">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p>Something went wrong during creation. Please try again.</p>
-          </div>
-        )}
+        {
+          status === 'error' && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3 text-destructive">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>Something went wrong during creation. Please try again.</p>
+            </div>
+          )
+        }
 
         <div className="pt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full h-12 text-lg"
             disabled={status === 'submitting'}
           >
             {status === 'submitting' ? 'Creating Team...' : 'Create Team'}
           </Button>
         </div>
-      </form>
-    </div>
+      </form >
+    </div >
   );
 };

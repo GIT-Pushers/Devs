@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import GithubLoginButton from "@/components/GithubLoginButton";
+import SignInButton from "@/components/SignInButton";
 import WalletConnectionButton from "@/components/WalletConnectionButton";
 import { motion } from "framer-motion";
 
@@ -64,7 +64,7 @@ export default function LoginPage() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 Social Login
               </h3>
-              <GithubLoginButton />
+              <SignInButton />
             </div>
 
             {/* Terms */}

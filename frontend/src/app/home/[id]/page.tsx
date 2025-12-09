@@ -380,7 +380,7 @@ export default function HackathonDetailPage() {
                       width: `${Math.min(
                         (Number(hackathon.totalSponsorshipAmount) /
                           Number(hackathon.minSponsorshipThreshold)) *
-                          100,
+                        100,
                         100
                       )}%`,
                     }}
@@ -449,7 +449,10 @@ export default function HackathonDetailPage() {
               <button className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-semibold">
                 Register Team
               </button>
-              <button className="w-full py-3 px-4 bg-secondary text-foreground rounded-md hover:bg-secondary/80 transition-colors font-semibold">
+              <button
+                onClick={() => router.push(`/home/${hackathon.id.toString()}/sponsor`)}
+                className="w-full py-3 px-4 bg-secondary text-foreground rounded-md hover:bg-secondary/80 transition-colors font-semibold"
+              >
                 Sponsor Hackathon
               </button>
               <button className="w-full py-3 px-4 bg-secondary text-foreground rounded-md hover:bg-secondary/80 transition-colors font-semibold">
