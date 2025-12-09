@@ -14,15 +14,14 @@ import "./interfaces/IGLYTCHStructs.sol";
  * @dev Manages hackathon lifecycle, teams, submissions, judging, and rewards
  */
 contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
-
     // ============ Constants ============
 
     uint256 public constant MIN_CREATION_FEE = 0.02 ether;
-    uint256 public constant TOKENS_PER_PARTICIPANT = 100 * 10**18;
+    uint256 public constant TOKENS_PER_PARTICIPANT = 100 * 10 ** 18;
     uint256 public constant PARTICIPANT_THRESHOLD_FOR_REFUND = 100;
     uint256 public constant MIN_JUDGES = 5;
     uint256 public constant MAX_TEAM_MEMBERS = 6;
-    
+
     // Score weights (out of 100)
     uint256 public constant JUDGE_WEIGHT = 40;
     uint256 public constant PARTICIPANT_WEIGHT = 35;
@@ -38,28 +37,32 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     address public platformTreasury;
     GitHubVerifier public githubVerifier;
     GLYTCHParticipationNFT public participationNFT;
-    
+
     uint256 public hackathonCount;
     uint256 public nextTeamId;
 
     // Mappings
     mapping(uint256 => Hackathon) public hackathons;
     mapping(uint256 => Sponsor[]) public hackathonSponsors;
-    mapping(uint256 => mapping(uint256 => TeamRegistration)) public registrations; // hackathonId => teamId => registration
+    mapping(uint256 => mapping(uint256 => TeamRegistration))
+        public registrations; // hackathonId => teamId => registration
     mapping(uint256 => Team) public teams;
     mapping(address => uint256[]) public userTeams;
     mapping(uint256 => uint256[]) public hackathonTeams; // hackathonId => teamIds[]
-    
+
     // Voting tokens per hackathon
     mapping(uint256 => GLYTCHVotingToken) public hackathonVotingToken;
-    
+
     // Judge scores
-    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public judgeScores; // hid => tid => judge => score
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+        public judgeScores; // hid => tid => judge => score
     mapping(uint256 => mapping(uint256 => uint256)) public judgeScoreCount; // hid => tid => count
-    mapping(uint256 => mapping(uint256 => mapping(address => bool))) public hasJudgeScored; // hid => tid => judge => scored
+    mapping(uint256 => mapping(uint256 => mapping(address => bool)))
+        public hasJudgeScored; // hid => tid => judge => scored
 
     // Participant voting
-    mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public participantVotes; // hid => voter => teamId => amount
+    mapping(uint256 => mapping(address => mapping(uint256 => uint256)))
+        public participantVotes; // hid => voter => teamId => amount
 
     // ============ Constructor ============
 
@@ -71,7 +74,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         require(_platformTreasury != address(0), "Invalid treasury");
         require(_githubVerifier != address(0), "Invalid verifier");
         require(_participationNFT != address(0), "Invalid NFT");
-        
+
         platformTreasury = _platformTreasury;
         githubVerifier = GitHubVerifier(_githubVerifier);
         participationNFT = GLYTCHParticipationNFT(_participationNFT);
@@ -105,7 +108,10 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         require(msg.value >= MIN_CREATION_FEE, "Insufficient creation fee");
         require(judges.length >= MIN_JUDGES, "Minimum 5 judges required");
         require(minTeams > 0 && minTeams < maxTeams, "Invalid team limits");
-        require(block.timestamp < sponsorshipEnd, "Sponsorship end must be future");
+        require(
+            block.timestamp < sponsorshipEnd,
+            "Sponsorship end must be future"
+        );
         require(sponsorshipEnd < hackStart, "Invalid sponsorship end");
         require(hackStart < hackEnd, "Invalid hackathon duration");
         require(stakeAmount > 0, "Stake must be positive");
@@ -137,9 +143,16 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         h.finalized = false;
 
         // Create voting token for this hackathon
-        string memory tokenName = string(abi.encodePacked("GLYTCH Vote #", _toString(id)));
-        string memory tokenSymbol = string(abi.encodePacked("GVOTE", _toString(id)));
-        hackathonVotingToken[id] = new GLYTCHVotingToken(tokenName, tokenSymbol);
+        string memory tokenName = string(
+            abi.encodePacked("GLYTCH Vote #", _toString(id))
+        );
+        string memory tokenSymbol = string(
+            abi.encodePacked("GVOTE", _toString(id))
+        );
+        hackathonVotingToken[id] = new GLYTCHVotingToken(
+            tokenName,
+            tokenSymbol
+        );
 
         emit HackathonCreated(id, msg.sender, msg.value);
     }
@@ -155,14 +168,23 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     ) external payable {
         Hackathon storage h = hackathons[hackathonId];
         require(h.id == hackathonId, "Hackathon does not exist");
-        require(block.timestamp >= h.sponsorshipStart && block.timestamp <= h.sponsorshipEnd, "Not in sponsorship phase");
-        require(msg.value >= h.minSponsorshipThreshold, "Below minimum threshold");
+        require(
+            block.timestamp >= h.sponsorshipStart &&
+                block.timestamp <= h.sponsorshipEnd,
+            "Not in sponsorship phase"
+        );
+        require(
+            msg.value >= h.minSponsorshipThreshold,
+            "Below minimum threshold"
+        );
 
-        hackathonSponsors[hackathonId].push(Sponsor({
-            sponsor: msg.sender,
-            amount: msg.value,
-            metadataURI: metadataURI
-        }));
+        hackathonSponsors[hackathonId].push(
+            Sponsor({
+                sponsor: msg.sender,
+                amount: msg.value,
+                metadataURI: metadataURI
+            })
+        );
 
         h.totalSponsorshipAmount += msg.value;
 
@@ -180,7 +202,10 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         string calldata metadataURI,
         string calldata joinCode
     ) external returns (uint256 teamId) {
-        require(githubVerifier.isGitHubVerified(msg.sender), "GitHub not verified");
+        require(
+            githubVerifier.isGitHubVerified(msg.sender),
+            "GitHub not verified"
+        );
         require(bytes(joinCode).length >= 8, "Join code too short");
 
         teamId = nextTeamId++;
@@ -206,11 +231,17 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
      * @param joinCode Secret join code
      */
     function joinTeam(uint256 teamId, string calldata joinCode) external {
-        require(githubVerifier.isGitHubVerified(msg.sender), "GitHub not verified");
+        require(
+            githubVerifier.isGitHubVerified(msg.sender),
+            "GitHub not verified"
+        );
         Team storage team = teams[teamId];
         require(team.exists, "Team does not exist");
         require(team.members.length < MAX_TEAM_MEMBERS, "Team full");
-        require(keccak256(abi.encodePacked(joinCode)) == team.joinCodeHash, "Invalid code");
+        require(
+            keccak256(abi.encodePacked(joinCode)) == team.joinCodeHash,
+            "Invalid code"
+        );
 
         // Check if already member
         for (uint256 i = 0; i < team.members.length; i++) {
@@ -233,13 +264,19 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     function registerTeam(uint256 hackathonId, uint256 teamId) external {
         Hackathon storage h = hackathons[hackathonId];
         Team storage team = teams[teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(team.exists, "Team does not exist");
-        require(block.timestamp > h.sponsorshipEnd, "Sponsorship phase not ended");
+        require(
+            block.timestamp > h.sponsorshipEnd,
+            "Sponsorship phase not ended"
+        );
         require(block.timestamp < h.hackStart, "Registration closed");
-        require(hackathonTeams[hackathonId].length < h.maxTeams, "Max teams reached");
-        
+        require(
+            hackathonTeams[hackathonId].length < h.maxTeams,
+            "Max teams reached"
+        );
+
         // Check if caller is team member
         bool isMember = false;
         for (uint256 i = 0; i < team.members.length; i++) {
@@ -249,7 +286,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
             }
         }
         require(isMember, "Not a team member");
-        
+
         TeamRegistration storage reg = registrations[hackathonId][teamId];
         require(!reg.registered, "Already registered");
 
@@ -264,18 +301,21 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
      * @param hackathonId The hackathon ID
      * @param teamId The team ID
      */
-    function stakeForTeam(uint256 hackathonId, uint256 teamId) external payable nonReentrant {
+    function stakeForTeam(
+        uint256 hackathonId,
+        uint256 teamId
+    ) external payable nonReentrant {
         Hackathon storage h = hackathons[hackathonId];
         Team storage team = teams[teamId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(team.exists, "Team does not exist");
         require(reg.registered, "Team not registered");
         require(!reg.staked, "Already staked");
         require(msg.value == h.stakeAmount, "Incorrect stake amount");
         require(block.timestamp < h.hackStart, "Hackathon already started");
-        
+
         // Check if caller is team member
         bool isMember = false;
         for (uint256 i = 0; i < team.members.length; i++) {
@@ -332,14 +372,17 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         Hackathon storage h = hackathons[hackathonId];
         Team storage team = teams[teamId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(team.exists, "Team does not exist");
         require(reg.staked, "Team not staked");
         require(!reg.projectSubmitted, "Already submitted");
-        require(block.timestamp >= h.hackStart && block.timestamp <= h.hackEnd, "Not in submission period");
+        require(
+            block.timestamp >= h.hackStart && block.timestamp <= h.hackEnd,
+            "Not in submission period"
+        );
         require(aiScore <= 100, "Invalid AI score");
-        
+
         // Check if caller is team member
         bool isMember = false;
         for (uint256 i = 0; i < team.members.length; i++) {
@@ -372,13 +415,16 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     ) external {
         Hackathon storage h = hackathons[hackathonId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(reg.projectSubmitted, "Project not submitted");
         require(block.timestamp > h.hackEnd, "Hackathon not ended");
         require(score <= 100, "Score must be <= 100");
         require(_isJudge(hackathonId, msg.sender), "Not a judge");
-        require(!hasJudgeScored[hackathonId][teamId][msg.sender], "Already scored");
+        require(
+            !hasJudgeScored[hackathonId][teamId][msg.sender],
+            "Already scored"
+        );
 
         judgeScores[hackathonId][teamId][msg.sender] = score;
         hasJudgeScored[hackathonId][teamId][msg.sender] = true;
@@ -400,16 +446,19 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     ) external {
         Hackathon storage h = hackathons[hackathonId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(reg.projectSubmitted, "Project not submitted");
         require(block.timestamp > h.hackEnd, "Hackathon not ended");
         require(amount > 0, "Amount must be positive");
-        
+
         // Check voter is not voting for their own team
         Team storage votedTeam = teams[teamId];
         for (uint256 i = 0; i < votedTeam.members.length; i++) {
-            require(votedTeam.members[i] != msg.sender, "Cannot vote for own team");
+            require(
+                votedTeam.members[i] != msg.sender,
+                "Cannot vote for own team"
+            );
         }
 
         GLYTCHVotingToken token = hackathonVotingToken[hackathonId];
@@ -440,8 +489,13 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
         // First pass: find max participant score for normalization
         for (uint256 i = 0; i < teamIds.length; i++) {
-            TeamRegistration storage reg = registrations[hackathonId][teamIds[i]];
-            if (reg.projectSubmitted && reg.participantScore > maxParticipantScore) {
+            TeamRegistration storage reg = registrations[hackathonId][
+                teamIds[i]
+            ];
+            if (
+                reg.projectSubmitted &&
+                reg.participantScore > maxParticipantScore
+            ) {
                 maxParticipantScore = reg.participantScore;
             }
         }
@@ -450,7 +504,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         for (uint256 i = 0; i < teamIds.length; i++) {
             uint256 teamId = teamIds[i];
             TeamRegistration storage reg = registrations[hackathonId][teamId];
-            
+
             if (!reg.projectSubmitted) {
                 scores[i] = 0;
                 reg.finalScore = 0;
@@ -459,18 +513,16 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
             // Calculate average judge score (default 100 if judge didn't score)
             uint256 judgeScore = _calculateJudgeScore(hackathonId, teamId);
-            
+
             // Normalize participant score to 0-100
-            uint256 normalizedParticipantScore = maxParticipantScore > 0 
-                ? (reg.participantScore * 100) / maxParticipantScore 
+            uint256 normalizedParticipantScore = maxParticipantScore > 0
+                ? (reg.participantScore * 100) / maxParticipantScore
                 : 0;
 
             // Calculate weighted final score
-            uint256 finalScore = (
-                (judgeScore * JUDGE_WEIGHT) +
+            uint256 finalScore = ((judgeScore * JUDGE_WEIGHT) +
                 (normalizedParticipantScore * PARTICIPANT_WEIGHT) +
-                (reg.aiScore * AI_WEIGHT)
-            ) / 100;
+                (reg.aiScore * AI_WEIGHT)) / 100;
 
             reg.judgeScore = judgeScore;
             reg.finalScore = finalScore;
@@ -487,7 +539,10 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     /**
      * @dev Internal function to calculate judge score
      */
-    function _calculateJudgeScore(uint256 hackathonId, uint256 teamId) internal view returns (uint256) {
+    function _calculateJudgeScore(
+        uint256 hackathonId,
+        uint256 teamId
+    ) internal view returns (uint256) {
         Hackathon storage h = hackathons[hackathonId];
         uint256 totalScore = 0;
         uint256 scoredCount = judgeScoreCount[hackathonId][teamId];
@@ -556,11 +611,15 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         uint256 platformFee = (totalFunds * PLATFORM_PERCENTAGE) / 100;
 
         // Transfer organizer fee
-        (bool successOrg, ) = payable(h.organizer).call{value: organizerFee}("");
+        (bool successOrg, ) = payable(h.organizer).call{value: organizerFee}(
+            ""
+        );
         require(successOrg, "Organizer transfer failed");
 
         // Transfer platform fee
-        (bool successPlatform, ) = payable(platformTreasury).call{value: platformFee}("");
+        (bool successPlatform, ) = payable(platformTreasury).call{
+            value: platformFee
+        }("");
         require(successPlatform, "Platform transfer failed");
 
         // Distribute winners pool
@@ -573,9 +632,12 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     /**
      * @dev Internal function to distribute winners pool
      */
-    function _distributeWinnersPool(uint256 hackathonId, uint256 winnersPool) internal {
+    function _distributeWinnersPool(
+        uint256 hackathonId,
+        uint256 winnersPool
+    ) internal {
         uint256[] memory teamIds = hackathonTeams[hackathonId];
-        
+
         // Prize distribution: 50% for 1st, 30% for 2nd, 20% for 3rd
         uint256 firstPrize = (winnersPool * 50) / 100;
         uint256 secondPrize = (winnersPool * 30) / 100;
@@ -591,7 +653,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         for (uint256 rank = 1; rank <= 3 && rank <= teamIds.length; rank++) {
             uint256 teamId = _getTeamByRanking(hackathonId, rank);
             winnerTeamIds[rank - 1] = teamId;
-            
+
             if (teamId > 0) {
                 _transferToTeam(hackathonId, teamId, prizes[rank - 1]);
             }
@@ -603,7 +665,10 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     /**
      * @dev Internal function to get team by ranking
      */
-    function _getTeamByRanking(uint256 hackathonId, uint256 ranking) internal view returns (uint256) {
+    function _getTeamByRanking(
+        uint256 hackathonId,
+        uint256 ranking
+    ) internal view returns (uint256) {
         uint256[] memory teamIds = hackathonTeams[hackathonId];
         for (uint256 i = 0; i < teamIds.length; i++) {
             if (registrations[hackathonId][teamIds[i]].ranking == ranking) {
@@ -616,12 +681,18 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     /**
      * @dev Internal function to transfer funds to team
      */
-    function _transferToTeam(uint256 /* hackathonId */, uint256 teamId, uint256 amount) internal {
+    function _transferToTeam(
+        uint256 /* hackathonId */,
+        uint256 teamId,
+        uint256 amount
+    ) internal {
         Team storage team = teams[teamId];
         uint256 amountPerMember = amount / team.members.length;
-        
+
         for (uint256 i = 0; i < team.members.length; i++) {
-            (bool success, ) = payable(team.members[i]).call{value: amountPerMember}("");
+            (bool success, ) = payable(team.members[i]).call{
+                value: amountPerMember
+            }("");
             require(success, "Transfer to team member failed");
         }
     }
@@ -633,10 +704,13 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
      * @param hackathonId The hackathon ID
      * @param teamId The team ID
      */
-    function refundStake(uint256 hackathonId, uint256 teamId) external nonReentrant {
+    function refundStake(
+        uint256 hackathonId,
+        uint256 teamId
+    ) external nonReentrant {
         Hackathon storage h = hackathons[hackathonId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(h.finalized, "Hackathon not finalized");
         require(reg.staked, "Not staked");
@@ -659,7 +733,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
      */
     function settleCreationFee(uint256 hackathonId) external nonReentrant {
         Hackathon storage h = hackathons[hackathonId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(msg.sender == h.organizer, "Only organizer");
         require(h.finalized, "Hackathon not finalized");
@@ -679,11 +753,15 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         h.creationFeeRefunded = true;
 
         if (refund > 0) {
-            (bool successRefund, ) = payable(h.organizer).call{value: refund}("");
+            (bool successRefund, ) = payable(h.organizer).call{value: refund}(
+                ""
+            );
             require(successRefund, "Refund transfer failed");
         }
 
-        (bool successPlatform, ) = payable(platformTreasury).call{value: platformFee}("");
+        (bool successPlatform, ) = payable(platformTreasury).call{
+            value: platformFee
+        }("");
         require(successPlatform, "Platform fee transfer failed");
 
         emit CreationFeeSettled(hackathonId, refund, platformFee);
@@ -692,15 +770,17 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     /**
      * @dev Internal function to get participant count
      */
-    function _getParticipantCount(uint256 hackathonId) internal view returns (uint256) {
+    function _getParticipantCount(
+        uint256 hackathonId
+    ) internal view returns (uint256) {
         uint256[] memory teamIds = hackathonTeams[hackathonId];
         uint256 count = 0;
-        
+
         for (uint256 i = 0; i < teamIds.length; i++) {
             Team storage team = teams[teamIds[i]];
             count += team.members.length;
         }
-        
+
         return count;
     }
 
@@ -720,12 +800,12 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         Hackathon storage h = hackathons[hackathonId];
         Team storage team = teams[teamId];
         TeamRegistration storage reg = registrations[hackathonId][teamId];
-        
+
         require(h.id == hackathonId, "Hackathon does not exist");
         require(h.finalized, "Hackathon not finalized");
         require(team.exists, "Team does not exist");
         require(reg.scoreFinalized, "Score not finalized");
-        
+
         // Check if caller is team member
         bool isMember = false;
         for (uint256 i = 0; i < team.members.length; i++) {
@@ -736,7 +816,12 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         }
         require(isMember, "Not a team member");
 
-        participationNFT.mintParticipationNFT(hackathonId, teamId, msg.sender, metadataURI);
+        participationNFT.mintParticipationNFT(
+            hackathonId,
+            teamId,
+            msg.sender,
+            metadataURI
+        );
     }
 
     // ============ View Functions ============
@@ -749,24 +834,35 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         return teams[id];
     }
 
-    function getTeamRegistration(uint256 hackathonId, uint256 teamId) 
-        external view returns (TeamRegistration memory) {
+    function getTeamRegistration(
+        uint256 hackathonId,
+        uint256 teamId
+    ) external view returns (TeamRegistration memory) {
         return registrations[hackathonId][teamId];
     }
 
-    function getHackathonTeams(uint256 hackathonId) external view returns (uint256[] memory) {
+    function getHackathonTeams(
+        uint256 hackathonId
+    ) external view returns (uint256[] memory) {
         return hackathonTeams[hackathonId];
     }
 
-    function getSponsors(uint256 hackathonId) external view returns (Sponsor[] memory) {
+    function getSponsors(
+        uint256 hackathonId
+    ) external view returns (Sponsor[] memory) {
         return hackathonSponsors[hackathonId];
     }
 
-    function getUserTeams(address user) external view returns (uint256[] memory) {
+    function getUserTeams(
+        address user
+    ) external view returns (uint256[] memory) {
         return userTeams[user];
     }
 
-    function _isJudge(uint256 hackathonId, address judge) internal view returns (bool) {
+    function _isJudge(
+        uint256 hackathonId,
+        address judge
+    ) internal view returns (bool) {
         Hackathon storage h = hackathons[hackathonId];
         for (uint256 i = 0; i < h.judges.length; i++) {
             if (h.judges[i] == judge) {
@@ -776,15 +872,22 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         return false;
     }
 
-    function isJudge(uint256 hackathonId, address judge) external view returns (bool) {
+    function isJudge(
+        uint256 hackathonId,
+        address judge
+    ) external view returns (bool) {
         return _isJudge(hackathonId, judge);
     }
 
-    function getParticipantCount(uint256 hackathonId) external view returns (uint256) {
+    function getParticipantCount(
+        uint256 hackathonId
+    ) external view returns (uint256) {
         return _getParticipantCount(hackathonId);
     }
 
-    function getVotingToken(uint256 hackathonId) external view returns (address) {
+    function getVotingToken(
+        uint256 hackathonId
+    ) external view returns (address) {
         return address(hackathonVotingToken[hackathonId]);
     }
 
@@ -803,6 +906,23 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     function updateParticipationNFT(address newNFT) external onlyOwner {
         require(newNFT != address(0), "Invalid address");
         participationNFT = GLYTCHParticipationNFT(newNFT);
+    }
+
+    // ============ View Functions ============
+
+    /**
+     * @notice Get judges for a hackathon
+     * @param hackathonId ID of the hackathon
+     * @return Array of judge addresses
+     */
+    function getHackathonJudges(
+        uint256 hackathonId
+    ) external view returns (address[] memory) {
+        require(
+            hackathons[hackathonId].id == hackathonId,
+            "Hackathon does not exist"
+        );
+        return hackathons[hackathonId].judges;
     }
 
     // ============ Utility Functions ============
@@ -829,7 +949,9 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     // ============ Emergency Functions ============
 
     function emergencyWithdraw() external onlyOwner {
-        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        (bool success, ) = payable(owner()).call{value: address(this).balance}(
+            ""
+        );
         require(success, "Emergency withdraw failed");
     }
 

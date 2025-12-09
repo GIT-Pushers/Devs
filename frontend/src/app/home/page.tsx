@@ -162,7 +162,7 @@ const HackathonDisplayPage = () => {
               <CardTitle className="flex items-center justify-between">
                 <span>Hackathon #{hackathon.id.toString()}</span>
                 {hackathon.finalized && (
-                  <span className="text-xs bg-green-600 dark:bg-green-700 text-white px-2 py-1 rounded">
+                  <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">
                     Finalized
                   </span>
                 )}
@@ -217,10 +217,7 @@ const HackathonDisplayPage = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <button
-                onClick={() => router.push(`/home/${hackathon.id.toString()}`)}
-                className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
+              <button className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
                 View Details
               </button>
             </CardFooter>

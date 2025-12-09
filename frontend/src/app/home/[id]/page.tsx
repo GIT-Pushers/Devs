@@ -36,6 +36,7 @@ interface Hackathon {
   totalSponsorshipAmount: bigint;
   minSponsorshipThreshold: bigint;
   finalized: boolean;
+  judges?: string[];
 }
 
 export default function HackathonDetailPage() {
@@ -58,6 +59,14 @@ export default function HackathonDetailPage() {
           params: [BigInt(hackathonId)],
         });
 
+        // Fetch judges separately
+        const judgesData = await readContract({
+          contract: mainContract,
+          method:
+            "function getHackathonJudges(uint256) view returns (address[])",
+          params: [BigInt(hackathonId)],
+        });
+
         setHackathon({
           id: hackathonData[0],
           organizer: hackathonData[1],
@@ -74,6 +83,7 @@ export default function HackathonDetailPage() {
           totalSponsorshipAmount: hackathonData[12],
           minSponsorshipThreshold: hackathonData[13],
           finalized: hackathonData[14],
+          judges: judgesData as string[],
         });
       } catch (err) {
         setError("Failed to fetch hackathon details");
