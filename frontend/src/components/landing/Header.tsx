@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import WalletConnectionButton from "@/components/WalletConnectionButton";
+import AuthButton from "@/components/AuthButton";
 import Link from "next/link";
 
 export function Header() {
@@ -50,6 +51,9 @@ export function Header() {
           transition={{ delay: 0.5 }}
         >
           <WalletConnectionButton />
+          <div className="hidden sm:block">
+            <AuthButton />
+          </div>
         </motion.div>
       </div>
     </motion.header>
