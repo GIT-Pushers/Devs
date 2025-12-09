@@ -1,6 +1,10 @@
 "use client"
 
 import React, { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Users, Key, CheckCircle2 } from "lucide-react"
 
 type Team = {
   id: number
@@ -49,89 +53,94 @@ function JoinTeamForm({ onJoin }: { onJoin: (team: Team) => void }) {
 }
     
 return (
-    <form onSubmit={submit} className="mt-6 p-6 rounded-2xl bg-[var(--card)] shadow-sm border border-[var(--border)] max-w-xl text-[var(--foreground)]">
-      <div className="flex items-center gap-4">
-          <a href="#" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--secondary-foreground)] text-lg font-bold shadow-md ring-1 ring-[var(--border)]">HX</div>
-          </a>
-        
+    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+        <CardTitle className="flex items-center gap-3 text-white text-xl">
+          <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+            <Users className="w-6 h-6 text-primary" />
+          </div>
+          Join an existing team
+        </CardTitle>
+        <p className="text-muted-foreground mt-2 text-sm">Have a team ID and join code? Enter them below to join instantly.</p>
+      </CardHeader>
 
-        <div>
-          <div className="text-lg font-semibold text-[var(--foreground)]">Join an existing team</div>
-          <div className="text-sm text-[var(--muted-foreground)]">Have a team ID and join code? Enter them below to join instantly.</div>
-        </div>
-      </div>
+      <CardContent className="pt-6">
+        <form onSubmit={submit} className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex flex-col">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Team ID</span>
+              <Input
+                inputMode="numeric"
+                pattern="\d*"
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                placeholder="e.g. 101"
+                className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+                aria-label="Team ID"
+                required
+              />
+            </label>
 
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <label className="flex flex-col">
-          <span className="text-xs font-medium text-[var(--muted-foreground)] mb-1">Team ID</span>
-          <input
-            inputMode="numeric"
-            pattern="\d*"
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
-            placeholder="e.g. 101"
-            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            aria-label="Team ID"
-            required
-          />
-        </label>
+            <label className="flex flex-col">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Join Code</span>
+              <Input
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+                placeholder="Enter team code"
+                className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+                aria-label="Join Code"
+                required
+              />
+            </label>
+          </div>
 
-        <label className="flex flex-col">
-          <span className="text-xs font-medium text-[var(--muted-foreground)] mb-1">Join Code</span>
-          <input
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value)}
-            placeholder="Enter team code"
-            className="px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            aria-label="Join Code"
-            required
-          />
-        </label>
-      </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button
+              type="submit"
+              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
+              aria-live="polite"
+            >
+              {status.state === "loading" ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  <span>Joining…</span>
+                </>
+              ) : (
+                <span>Join Team</span>
+              )}
+            </Button>
 
-      <div className="mt-5 flex items-center gap-3">
-        <button
-          type="submit"
-          className="inline-flex items-center gap-2 px-5 py-3 btn-secondary font-medium"
-          aria-live="polite"
-        >
-          {status.state === "loading" ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
-              <span>Joining…</span>
-            </>
-          ) : (
-              <span>Join Team</span>
-            )}
-        </button>
-
-        
-        <div className="ml-auto text-sm text-[var(--muted-foreground)]">
-          <span className="inline-block align-middle">Demo code:</span>{" "}
-          <code className="bg-[var(--muted)] px-2 py-0.5 rounded text-xs text-[var(--foreground)] ml-2">JOINME</code>
-        </div>
-      </div>
-
-      {/* Status messages */}
-      <div className="mt-4 min-h-[1.6rem]">
-        {status.state === "error" && <div className="text-sm text-[var(--destructive)]">{status.message}</div>}
-        {status.state === "success" && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--accent)] border border-[var(--border)] text-[var(--foreground)]">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-foreground)]/10 text-[var(--accent-foreground)]">
-              <IconCheck className="w-5 h-5" />
-            </span>
-            <div>
-              <div className="font-medium">{status.message}</div>
-              <div className="text-xs text-[var(--muted-foreground)]">You can now view team projects and chat with members.</div>
+            <div className="ml-auto text-sm text-muted-foreground">
+              <span className="inline-block align-middle">Demo code:</span>{" "}
+              <code className="bg-primary/20 text-primary border border-primary/30 px-2 py-1 rounded text-xs font-mono ml-2">JOINME</code>
             </div>
           </div>
-        )}
-      </div>
-    </form>
+
+          {/* Status messages */}
+          <div className="min-h-[1.6rem]">
+            {status.state === "error" && (
+              <div className="text-sm text-destructive font-medium p-3 bg-destructive/20 border border-destructive/30 rounded-lg">
+                {status.message}
+              </div>
+            )}
+            {status.state === "success" && (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/20 border-2 border-primary/30">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/30 text-primary">
+                  <CheckCircle2 className="w-5 h-5" />
+                </span>
+                <div>
+                  <div className="font-bold text-white">{status.message}</div>
+                  <div className="text-xs text-muted-foreground mt-1">You can now view team projects and chat with members.</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -139,17 +148,24 @@ export default function JoinTeamPage() {
   const [joined, setJoined] = useState<Team | null>(null)
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[var(--background)] to-[var(--card)] text-[var(--foreground)] p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="border-b border-[var(--border)] bg-[var(--background)]">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          
-
-         
-
-          
+    <main className="min-h-screen bg-black text-white overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl overflow-hidden">
+        {/* Enhanced Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-1.5 w-16 bg-gradient-to-r from-primary to-primary/50"></div>
+            <span className="text-primary text-sm font-bold uppercase tracking-widest">
+              Join Team
+            </span>
+            <div className="h-1.5 w-16 bg-gradient-to-r from-primary/50 to-primary"></div>
+          </div>
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4">
+            Join a Team
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Enter your team ID and join code to become part of a hackathon team
+          </p>
         </div>
-      </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -161,38 +177,53 @@ export default function JoinTeamPage() {
             />
           </div>
             
-          <aside className="lg:col-span-1 p-4.5">
-            <div className="p-4 rounded-xl bg-card border border-[var(--border)] shadow-sm p-3">
-              <h3 className="font-semibold text-foreground">Why join via code?</h3>
-              <ul className="mt-3 space-y-2 text-sm text-[var(--muted-foreground)]">
-                <li>• Join private teams without public links.</li>
-                <li>• Keep member count validated by organizers.</li>
-                <li>• Immediate access to team resources after joining.</li>
-              </ul>
-              <div className="mt-4">
-                <div className="text-xs text-gray-500">Need help?</div>
-                <a href="#" className="text-accent-foreground text-italic text-sm mt-2 inline-block hx-cta hx-cta--secondary hx-cta--sm">Contact support</a>
-              </div>
-            </div>
+          <aside className="lg:col-span-1 space-y-6 overflow-hidden">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+                <CardTitle className="text-white">Why join via code?</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <Key className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Join private teams without public links.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Key className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Keep member count validated by organizers.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Key className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Immediate access to team resources after joining.</span>
+                  </li>
+                </ul>
+                <div className="mt-6 pt-4 border-t border-primary/20">
+                  <div className="text-xs text-muted-foreground mb-2">Need help?</div>
+                  <a href="#" className="text-primary text-sm font-medium hover:text-primary/80">Contact support</a>
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="mt-4 p-4 rounded-xl bg-card border border-[var(--border)] shadow-sm text-sm text-gray-700">
-              <div className="font-semibold text-foreground">Joined Team</div>
-              <div className="mt-2">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 overflow-hidden">
+              <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+                <CardTitle className="text-white">Joined Team</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
                 {joined ? (
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold">
-                      {joined.name.split(" ").slice(-1)[0]}
+                    <div className="w-12 h-12 rounded-full bg-primary/20 border-2 border-primary/30 text-primary flex items-center justify-center font-bold text-lg">
+                      {joined.name.split(" ").slice(-1)[0][0]}
                     </div>
                     <div>
-                      <div className="font-medium">{joined.name}</div>
-                      <div className="text-xs text-gray-500">Members: {joined.members.join(", ")}</div>
+                      <div className="font-bold text-white">{joined.name}</div>
+                      <div className="text-xs text-muted-foreground">Members: {joined.members.join(", ")}</div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-500">No team joined yet</div>
+                  <div className="text-sm text-muted-foreground">No team joined yet</div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </aside>
         </div>
       </div>

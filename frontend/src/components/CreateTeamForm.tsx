@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { Key, CheckCircle2, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Key, CheckCircle2, ShieldCheck, AlertCircle, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { FileUploader } from './ui/fileupload';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 interface TeamFormData {
   name: string;
@@ -61,124 +62,140 @@ export const CreateTeamForm: React.FC = () => {
 
   if (status === 'success') {
     return (
-      <div className="bg-background p-8 rounded-xl border border-border shadow-sm text-center max-w-lg mx-auto animate-fadeIn">
-        <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="w-8 h-8 text-success" />
-        </div>
-        <h3 className="text-2xl font-bold text-foreground mb-2">Team Created!</h3>
-        <p className="text-muted-foreground mb-8">
-          Your team has been successfully registered. You can now invite members using your secure join code.
-        </p>
-
-        <div className="bg-secondary rounded-lg p-4 text-left space-y-3 mb-8 border border-border">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground">Team Name</span>
-            <span className="text-sm font-bold text-foreground">{formData.name}</span>
+      <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 text-center max-w-lg mx-auto overflow-hidden">
+        <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-primary/30">
+            <CheckCircle2 className="w-8 h-8 text-primary" />
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground">Status</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
-              Active
-            </span>
-          </div>
-        </div>
+          <CardTitle className="text-3xl font-extrabold text-white mb-2">Team Created!</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <p className="text-muted-foreground mb-8 text-lg">
+            Your team has been successfully registered. You can now invite members using your secure join code.
+          </p>
 
-        <Button onClick={resetForm} className="w-full">
-          Create Another Team
-        </Button>
-      </div>
+          <div className="bg-black/40 rounded-xl p-5 text-left space-y-4 mb-8 border-2 border-primary/20 backdrop-blur-sm">
+             <div className="flex justify-between items-center">
+               <span className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Team Name</span>
+               <span className="text-sm font-bold text-white">{formData.name}</span>
+             </div>
+             <div className="flex justify-between items-center">
+               <span className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Status</span>
+               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary border border-primary/30">
+                 Active
+               </span>
+             </div>
+          </div>
+
+          <Button onClick={resetForm} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer">
+            Create Another Team
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-background p-6 md:p-10 rounded-2xl border border-border shadow-sm max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground">Create New Team</h2>
-        <p className="text-muted-foreground mt-1">Register your team profile for the HackX hackathon.</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Team Name</label>
-            <Input
-              placeholder="e.g. The Code Warriors"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            />
-            {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
+    <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-2xl mx-auto overflow-hidden">
+      <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+        <CardTitle className="flex items-center gap-3 text-white text-2xl">
+          <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+            <Users className="w-6 h-6 text-primary" />
           </div>
+          Create New Team
+        </CardTitle>
+        <p className="text-muted-foreground mt-2">Register your team profile for the HackX hackathon.</p>
+      </CardHeader>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Team Description</label>
-            <Textarea
-              placeholder="What is your team building? Describe your mission."
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            />
-            {errors.description && <p className="text-destructive text-sm mt-1">{errors.description}</p>}
-          </div>
-
-          <div>
-            <label className="block bg-background text-sm font-medium text-foreground mb-2">Team Image</label>
-            <FileUploader
-              value={formData.image}
-              onChange={(file) => setFormData(prev => ({ ...prev, image: file }))}
-            />
-            {errors.image && <p className="text-destructive text-sm mt-1">{errors.image}</p>}
-          </div>
-
-          <div className="bg-background p-6 rounded-xl border border-border">
-            <div className="flex items-center gap-2 mb-4">
-              <ShieldCheck className="w-5 h-5 text-foreground" />
-              <h3 className="font-semibold text-foreground">Security</h3>
-            </div>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Join Code</label>
-              <div className="relative">
-                <Input
-                  type={showJoinCode ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={formData.joinCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, joinCode: e.target.value }))}
-                  className="bg-background pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowJoinCode(!showJoinCode)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showJoinCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.joinCode && <p className="text-destructive text-sm mt-1">{errors.joinCode}</p>}
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                Team Name
+              </label>
+              <Input 
+                placeholder="e.g. The Code Warriors"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+              />
+              {errors.name && <p className="text-destructive text-sm mt-2 font-medium">{errors.name}</p>}
             </div>
-            <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
-              <Key className="w-3 h-3 mt-0.5 shrink-0" />
-              Members will use this code to join your team. It must be at least 8 characters.
-            </p>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                Team Description
+              </label>
+              <Textarea
+                placeholder="What is your team building? Describe your mission."
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50 min-h-[100px]"
+              />
+              {errors.description && <p className="text-destructive text-sm mt-2 font-medium">{errors.description}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                Team Image
+              </label>
+              <FileUploader 
+                value={formData.image}
+                onChange={(file) => setFormData(prev => ({ ...prev, image: file }))}
+              />
+              {errors.image && <p className="text-destructive text-sm mt-2 font-medium">{errors.image}</p>}
+            </div>
+
+            <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-white text-lg">
+                  <div className="p-1.5 bg-primary/20 rounded-lg border border-primary/30">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                  </div>
+                  Security
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                    Join Code
+                  </label>
+                  <Input 
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.joinCode}
+                    onChange={(e) => setFormData(prev => ({ ...prev, joinCode: e.target.value }))}
+                    className="bg-black/60 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+                  />
+                  {errors.joinCode && <p className="text-destructive text-sm mt-2 font-medium">{errors.joinCode}</p>}
+                </div>
+                <p className="text-xs text-muted-foreground flex items-start gap-2 bg-primary/5 p-3 rounded-lg border border-primary/10">
+                  <Key className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                  <span>Members will use this code to join your team. It must be at least 8 characters.</span>
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </div>
 
-        {
-          status === 'error' && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-3 text-destructive">
+          {status === 'error' && (
+            <div className="p-4 bg-destructive/20 border-2 border-destructive/30 rounded-lg flex items-center gap-3 text-destructive">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p>Something went wrong during creation. Please try again.</p>
+              <p className="font-medium">Something went wrong during creation. Please try again.</p>
             </div>
-          )
-        }
+          )}
 
-        <div className="pt-4">
-          <Button
-            type="submit"
-            className="w-full h-12 text-lg"
-            disabled={status === 'submitting'}
-          >
-            {status === 'submitting' ? 'Creating Team...' : 'Create Team'}
-          </Button>
-        </div>
-      </form >
-    </div >
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
+              disabled={status === 'submitting'}
+            >
+              {status === 'submitting' ? 'Creating Team...' : 'Create Team'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
