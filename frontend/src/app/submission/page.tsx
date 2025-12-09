@@ -36,6 +36,16 @@ interface AnalysisResult {
   };
   detected_tech_in_readme: Record<string, boolean>;
   detected_tech_in_code: Record<string, boolean>;
+  ai_detected_tech: {
+    frontend: string[];
+    backend: string[];
+    database: string[];
+    devops: string[];
+    ai_ml: string[];
+    mobile: string[];
+    blockchain: string[];
+    other: string[];
+  };
   commits_count: number;
   file_count: number;
   fraud_reasons: string[];
@@ -262,7 +272,7 @@ export default function SubmissionPage() {
                 {/* Trust Score */}
                 <div className="text-center">
                   <div className="text-4xl font-bold text-blue-400 mb-2">
-                    {analysisResult.trust_score}/100
+                    {Math.round(analysisResult.trust_score * 100) / 100}/100
                   </div>
                   <p className="text-gray-300">Trust Score</p>
                 </div>
@@ -362,6 +372,37 @@ export default function SubmissionPage() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* AI-Detected Technologies */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">
+                    AI-Detected Technologies
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(analysisResult.ai_detected_tech || {}).map(
+                      ([category, technologies]) =>
+                        technologies.length > 0 && (
+                          <div key={category} className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-300 capitalize">
+                              {category.replace("_", " & ")}
+                            </h4>
+                            <div className="flex flex-wrap gap-1">
+                              {technologies.map(
+                                (tech: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="px-2 py-1 text-xs rounded bg-purple-600 text-white"
+                                  >
+                                    {tech}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )
+                    )}
                   </div>
                 </div>
 
