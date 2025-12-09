@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 export interface FormData {
   hackathonName?: string;
@@ -79,9 +78,35 @@ const initialFormData: FormData = {
   eventTimeline: [{ eventName: "", eventDate: "", eventDescription: "" }],
 };
 
-export const useHackathonFormStore = create<HackathonFormStore>()(
-  persist(
-    (set) => ({
+export const useHackathonFormStore = create<HackathonFormStore>((set) => ({
+  formData: initialFormData,
+  imagePreview: "",
+  step: 1,
+  transactionData: null,
+  isUploading: false,
+  uploadProgress: 0,
+  uploadStatus: "",
+
+  setFormData: (data) =>
+    set((state) => ({
+      formData: { ...state.formData, ...data },
+    })),
+
+  setImagePreview: (preview) => set({ imagePreview: preview }),
+
+  setStep: (step) => set({ step }),
+
+  setTransactionData: (data) => set({ transactionData: data }),
+
+  setUploadState: (updates) =>
+    set((state) => ({
+      isUploading: updates.isUploading ?? state.isUploading,
+      uploadProgress: updates.uploadProgress ?? state.uploadProgress,
+      uploadStatus: updates.uploadStatus ?? state.uploadStatus,
+    })),
+
+  resetForm: () =>
+    set({
       formData: initialFormData,
       imagePreview: "",
       step: 1,
@@ -89,47 +114,5 @@ export const useHackathonFormStore = create<HackathonFormStore>()(
       isUploading: false,
       uploadProgress: 0,
       uploadStatus: "",
-
-      setFormData: (data) =>
-        set((state) => ({
-          formData: { ...state.formData, ...data },
-        })),
-
-      setImagePreview: (preview) => set({ imagePreview: preview }),
-
-      setStep: (step) => set({ step }),
-
-      setTransactionData: (data) => set({ transactionData: data }),
-
-      setUploadState: (updates) =>
-        set((state) => ({
-          isUploading: updates.isUploading ?? state.isUploading,
-          uploadProgress: updates.uploadProgress ?? state.uploadProgress,
-          uploadStatus: updates.uploadStatus ?? state.uploadStatus,
-        })),
-
-      resetForm: () =>
-        set({
-          formData: initialFormData,
-          imagePreview: "",
-          step: 1,
-          transactionData: null,
-          isUploading: false,
-          uploadProgress: 0,
-          uploadStatus: "",
-        }),
     }),
-    {
-      name: "hackathon-form-storage",
-      partialize: (state) => ({
-        formData: {
-          ...state.formData,
-          // Exclude hackathonImage as FileList can't be serialized
-          hackathonImage: undefined,
-        },
-        imagePreview: state.imagePreview,
-        step: state.step,
-      }),
-    }
-  )
-);
+}));
