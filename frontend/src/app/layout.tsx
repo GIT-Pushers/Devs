@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HackX",
-  description: "HackX Official Website",
+  title: "HACKX - Fully Decentralized Hackathon Platform",
+  description: "Build. Compete. Win. On-Chain. Everything from sponsorships, team registrations, project submissions, judging, voting, to prize distribution happens on-chain.",
 };
 
 export default function RootLayout({
