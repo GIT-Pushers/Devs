@@ -29,7 +29,7 @@ const itemVariants = {
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-black">
+    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-background">
       <BackgroundLights />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
         <motion.div
@@ -40,21 +40,27 @@ export function HeroSection() {
         >
           <motion.h1
             variants={itemVariants}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8, type: "spring", stiffness: 100 }}
+            transition={{
+              delay: 0.4,
+              duration: 0.8,
+              type: "spring",
+              stiffness: 100,
+            }}
           >
             Build. Compete. Win. On-Chain.
           </motion.h1>
           <motion.p
             variants={itemVariants}
-            className="text-base sm:text-lg text-gray-300 max-w-xl"
+            className="text-base sm:text-lg text-muted-foreground max-w-xl"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
           >
-            Decentralized hackathons with on-chain prizes and AI-powered judging.
+            Decentralized hackathons with on-chain prizes and AI-powered
+            judging.
           </motion.p>
           <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"

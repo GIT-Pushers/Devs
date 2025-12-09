@@ -6,15 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const benefits = [
   {
     title: "Fully Decentralized",
-    description: "Everything on-chain. No central authority. Complete transparency.",
+    description:
+      "Everything on-chain. No central authority. Complete transparency.",
   },
   {
     title: "AI-Powered Analysis",
-    description: "Instant code evaluation with AI, judges, and community voting.",
+    description:
+      "Instant code evaluation with AI, judges, and community voting.",
   },
   {
     title: "Automatic Prizes",
-    description: "Instant prize distribution via smart contracts. No intermediaries.",
+    description:
+      "Instant prize distribution via smart contracts. No intermediaries.",
   },
   {
     title: "GitHub Integration",
@@ -24,17 +27,19 @@ const benefits = [
 
 export function WhyChooseHackX() {
   return (
-    <section id="why-hackx" className="py-24 bg-black relative">
+    <section id="why-hackx" className="py-24 bg-background relative">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div 
+        <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-white">Why Choose HACKX</h2>
-          <p className="text-base text-gray-300 max-w-xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">
+            Why Choose HACKX
+          </h2>
+          <p className="text-base text-muted-foreground max-w-xl mx-auto">
             Decentralized. Transparent. Automated.
           </p>
         </motion.div>
@@ -45,23 +50,25 @@ export function WhyChooseHackX() {
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ 
+              transition={{
                 delay: index * 0.15,
                 duration: 0.5,
-                type: "spring"
+                type: "spring",
               }}
-              whileHover={{ 
+              whileHover={{
                 y: -5,
                 scale: 1.02,
-                transition: { duration: 0.3 }
+                transition: { duration: 0.3 },
               }}
             >
-              <Card className="bg-black border border-white/10 hover:border-white/30 transition-colors">
+              <Card className="bg-background border border-border hover:border-foreground/30 transition-colors">
                 <CardHeader>
-                  <CardTitle className="text-white">{benefit.title}</CardTitle>
+                  <CardTitle className="text-foreground">
+                    {benefit.title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-400">{benefit.description}</p>
+                  <p className="text-muted-foreground">{benefit.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -71,39 +78,57 @@ export function WhyChooseHackX() {
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ 
+          transition={{
             duration: 0.6,
-            type: "spring"
+            type: "spring",
           }}
           className="max-w-4xl mx-auto"
         >
-          <Card className="border-2 border-white/20 bg-black">
+          <Card className="border-2 border-border bg-background">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Hackathon Workflow</CardTitle>
-                <span className="text-sm text-gray-400">Live on-chain</span>
+                <CardTitle className="text-foreground">
+                  Hackathon Workflow
+                </CardTitle>
+                <span className="text-sm text-muted-foreground">
+                  Live on-chain
+                </span>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2 text-white">Web3 Innovation Hackathon</h4>
+                  <h4 className="font-semibold mb-2 text-foreground">
+                    Web3 Innovation Hackathon
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                      <span className="text-gray-300">Active - 3 days remaining</span>
+                      <span className="text-muted-foreground">
+                        Active - 3 days remaining
+                      </span>
                     </div>
                     <div>
-                      <p className="text-gray-400">127 teams • 50 ETH prize pool • 89 submissions</p>
+                      <p className="text-muted-foreground">
+                        127 teams • 50 ETH prize pool • 89 submissions
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-border">
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-white/10 text-white rounded-full text-xs border border-white/20">Active</span>
-                    <span className="px-3 py-1 bg-white/5 text-gray-300 rounded-full text-xs border border-white/10">12 sponsors</span>
-                    <span className="px-3 py-1 bg-white/5 text-gray-300 rounded-full text-xs border border-white/10">127 teams</span>
-                    <span className="px-3 py-1 bg-white/5 text-gray-300 rounded-full text-xs border border-white/10">89 projects</span>
+                    <span className="px-3 py-1 bg-primary/20 text-foreground rounded-full text-xs border border-border">
+                      Active
+                    </span>
+                    <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border">
+                      12 sponsors
+                    </span>
+                    <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border">
+                      127 teams
+                    </span>
+                    <span className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border">
+                      89 projects
+                    </span>
                   </div>
                 </div>
               </div>
@@ -114,4 +139,3 @@ export function WhyChooseHackX() {
     </section>
   );
 }
-
