@@ -38,7 +38,7 @@
 
 ## 🌟 Overview
 
-**GLYTCH** is a revolutionary decentralized hackathon platform built on blockchain technology that brings transparency, fairness, and automation to the world of hackathons. It eliminates centralized control, ensures fair judging through a multi-faceted scoring system, and provides verifiable proof of participation through NFTs.
+**HACKX** is a revolutionary decentralized hackathon platform built on blockchain technology that brings transparency, fairness, and automation to the world of hackathons. It eliminates centralized control, ensures fair judging through a multi-faceted scoring system, and provides verifiable proof of participation through NFTs.
 
 The platform combines:
 - **Smart Contracts** for transparent hackathon management
