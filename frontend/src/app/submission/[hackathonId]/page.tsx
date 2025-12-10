@@ -381,13 +381,13 @@ export default function SubmissionPage() {
 
         {/* Success Banner */}
         {isSubmitted && (
-          <Card className="border-2 border-green-500/50 bg-green-500/10 mb-6">
+          <Card className="border-2 border-success/50 bg-success/10 mb-6">
             <CardContent className="py-6">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <CheckCircle className="h-8 w-8 text-success" />
                   <div>
-                    <h3 className="text-xl font-bold text-green-500">
+                    <h3 className="text-xl font-bold text-success">
                       Project Submitted!
                     </h3>
                     <p className="text-muted-foreground">
@@ -584,13 +584,13 @@ export default function SubmissionPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-lg">
+                  <div className="bg-success/10 border border-success/30 p-4 rounded-lg">
                     <p className="text-sm font-semibold mb-2">
                       Analysis Complete!
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">AI Score:</span>
-                      <span className="text-3xl font-bold text-green-500">
+                      <span className="text-3xl font-bold text-success">
                         {analysisReport.aiScore}/100
                       </span>
                     </div>
@@ -628,8 +628,8 @@ export default function SubmissionPage() {
                 </p>
               ) : isSubmitted ? (
                 <div className="space-y-4">
-                  <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-green-500 mb-2" />
+                  <div className="bg-success/10 border border-success/30 p-4 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-success mb-2" />
                     <p className="font-semibold">Submission Complete!</p>
                     <p className="text-sm text-muted-foreground">
                       Your project has been submitted successfully.

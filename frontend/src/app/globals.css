@@ -17,6 +17,12 @@
   --accent-foreground: #1e9df1;
   --destructive: #f4212e;
   --destructive-foreground: #ffffff;
+  --success: #17bf63;
+  --success-foreground: #ffffff;
+  --warning: #f7b928;
+  --warning-foreground: #0f1419;
+  --info: #1e9df1;
+  --info-foreground: #ffffff;
   --border: #e1eaef;
   --input: #f7f9fa;
   --ring: #1da1f2;
@@ -77,6 +83,12 @@
   --accent-foreground: #1c9cf0;
   --destructive: #f4212e;
   --destructive-foreground: #ffffff;
+  --success: #00b87a;
+  --success-foreground: #ffffff;
+  --warning: #f7b928;
+  --warning-foreground: #0f1419;
+  --info: #1c9cf0;
+  --info-foreground: #ffffff;
   --border: #242628;
   --input: #22303c;
   --ring: #1da1f2;
@@ -135,6 +147,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -274,6 +292,42 @@ body {
 
 .text-primary {
   color: var(--primary);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-info {
+  color: var(--info);
+}
+
+.bg-success {
+  background-color: var(--success);
+}
+
+.bg-warning {
+  background-color: var(--warning);
+}
+
+.bg-info {
+  background-color: var(--info);
+}
+
+.border-success {
+  border-color: var(--success);
+}
+
+.border-warning {
+  border-color: var(--warning);
+}
+
+.border-info {
+  border-color: var(--info);
 }
 
 .rounded-theme {

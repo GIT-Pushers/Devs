@@ -403,8 +403,8 @@ export default function HackathonDetailPage() {
     if (now >= startTime && now <= endTime)
       return {
         status: "Active",
-        color: "text-green-400",
-        bgColor: "bg-green-500/20 border-green-500/30",
+        color: "text-success",
+        bgColor: "bg-success/20 border-success/30",
       };
     return {
       status: "Ended",
@@ -517,7 +517,7 @@ export default function HackathonDetailPage() {
             </div>
             <div className="flex flex-col gap-3">
               {hackathon.finalized && (
-                <span className="px-6 py-3 bg-green-500/20 text-green-400 border-2 border-green-500/40 rounded-xl font-bold text-sm shadow-lg shadow-green-500/20">
+                <span className="px-6 py-3 bg-success/20 text-success border-2 border-success/40 rounded-xl font-bold text-sm shadow-lg shadow-success/20">
                   ✓ Finalized
                 </span>
               )}
@@ -683,7 +683,7 @@ export default function HackathonDetailPage() {
                     </p>
                     <p className="text-2xl font-extrabold">
                       {hackathon.creationFeeRefunded ? (
-                        <span className="text-green-400">✓ Refunded</span>
+                        <span className="text-success">✓ Refunded</span>
                       ) : (
                         <span className="text-primary">⏳ Pending</span>
                       )}
@@ -871,7 +871,7 @@ export default function HackathonDetailPage() {
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full border-2 border-green-500/30 hover:border-green-500/50 hover:bg-green-500/10 font-bold py-6 text-base cursor-pointer"
+                      className="w-full border-2 border-success/30 hover:border-success/50 hover:bg-success/10 font-bold py-6 text-base cursor-pointer"
                       disabled={!account?.address || loadingTeams}
                     >
                       <CheckCircle className="mr-2 h-5 w-5" />
@@ -954,7 +954,7 @@ export default function HackathonDetailPage() {
                                           {team.members.length !== 1 ? "s" : ""}
                                         </p>
                                         {isRegistered && (
-                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                                             <CheckCircle className="h-3 w-3" />
                                             Already Registered
                                           </div>
@@ -1023,7 +1023,7 @@ export default function HackathonDetailPage() {
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full border-2 border-yellow-500/30 hover:border-yellow-500/50 hover:bg-yellow-500/10 font-bold py-6 text-base cursor-pointer"
+                      className="w-full border-2 border-warning/30 hover:border-warning/50 hover:bg-warning/10 font-bold py-6 text-base cursor-pointer"
                       disabled={!account?.address || loadingTeams}
                     >
                       <Lock className="mr-2 h-5 w-5" />
@@ -1070,11 +1070,11 @@ export default function HackathonDetailPage() {
                         !loadingTeams &&
                         userTeams.length > 0 && (
                           <>
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
                               <p className="text-sm font-semibold mb-2">
                                 Stake Amount Required:
                               </p>
-                              <p className="text-3xl font-bold text-yellow-400">
+                              <p className="text-3xl font-bold text-warning">
                                 {formatEther(hackathon.stakeAmount)} ETH
                               </p>
                             </div>
@@ -1119,12 +1119,12 @@ export default function HackathonDetailPage() {
                                               : ""}
                                           </p>
                                           {!isRegistered && (
-                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-semibold">
                                               Not Registered
                                             </div>
                                           )}
                                           {isStaked && (
-                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                                               <Lock className="h-3 w-3" />
                                               Already Staked
                                             </div>
@@ -1185,7 +1185,7 @@ export default function HackathonDetailPage() {
                                 console.error("Staking error:", error);
                                 toast.error(`Staking failed: ${error.message}`);
                               }}
-                              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-6"
+                              className="w-full bg-warning hover:bg-warning/90 text-warning-foreground font-bold py-6"
                             >
                               Stake {formatEther(hackathon.stakeAmount)} ETH for
                               Team #{selectedTeamId}
@@ -1231,7 +1231,7 @@ export default function HackathonDetailPage() {
                     router.push(`/submission/${hackathon.id.toString()}`)
                   }
                   variant="outline"
-                  className="w-full border-2 border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10 font-bold py-6 text-base cursor-pointer"
+                  className="w-full border-2 border-info/30 hover:border-info/50 hover:bg-info/10 font-bold py-6 text-base cursor-pointer"
                 >
                   <Upload className="mr-2 h-5 w-5" />
                   Submit Project
@@ -1247,7 +1247,7 @@ export default function HackathonDetailPage() {
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full border-2 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 font-bold py-6 text-base cursor-pointer"
+                          className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
                           disabled={!account?.address || loadingSubmittedTeams}
                         >
                           <Gavel className="mr-2 h-5 w-5" />
@@ -1293,7 +1293,7 @@ export default function HackathonDetailPage() {
                               <div className="space-y-3">
                                 {submittedTeams.map((team) => {
                                   const hasScored =
-                                    team.registration.judgeScore > 0n;
+                                    team.registration.judgeScore > BigInt(0);
 
                                   return (
                                     <Card
@@ -1318,17 +1318,17 @@ export default function HackathonDetailPage() {
                                                 </p>
                                               )}
                                               <div className="flex flex-wrap gap-2 mt-2">
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-semibold">
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-info/20 text-info rounded-full text-xs font-semibold">
                                                   <CheckCircle className="h-3 w-3" />
                                                   Project Submitted
                                                 </span>
-                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-semibold">
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-warning/20 text-warning rounded-full text-xs font-semibold">
                                                   AI Score:{" "}
                                                   {team.registration.aiScore.toString()}
                                                   /100
                                                 </span>
                                                 {hasScored && (
-                                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                                                     <CheckCircle className="h-3 w-3" />
                                                     Scored
                                                   </span>
@@ -1385,10 +1385,9 @@ export default function HackathonDetailPage() {
                                                       selectedScore < 0 ||
                                                       selectedScore > 100
                                                     ) {
-                                                      toast.error(
+                                                      throw new Error(
                                                         "Score must be between 0 and 100"
                                                       );
-                                                      return;
                                                     }
                                                     return prepareContractCall({
                                                       contract: mainContract,
@@ -1419,7 +1418,7 @@ export default function HackathonDetailPage() {
                                                       `Scoring failed: ${error.message}`
                                                     );
                                                   }}
-                                                  className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3"
+                                                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3"
                                                 >
                                                   Submit Score: {selectedScore}
                                                   /100
@@ -1483,7 +1482,7 @@ export default function HackathonDetailPage() {
                           `Failed to calculate scores: ${error.message}`
                         );
                       }}
-                      className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-6 text-base border-2 border-purple-600"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6 text-base border-2 border-primary"
                     >
                       <Award className="mr-2 h-5 w-5" />
                       Calculate Final Scores & Rankings
@@ -1516,7 +1515,7 @@ export default function HackathonDetailPage() {
                         `Failed to distribute rewards: ${error.message}`
                       );
                     }}
-                    className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-6 text-base border-2 border-yellow-600 shadow-lg shadow-yellow-500/30"
+                    className="w-full bg-warning hover:bg-warning/90 text-warning-foreground font-bold py-6 text-base border-2 border-warning shadow-lg shadow-warning/30"
                   >
                     <Trophy className="mr-2 h-5 w-5" />
                     Distribute Rewards to Winners
@@ -1552,7 +1551,7 @@ export default function HackathonDetailPage() {
                           `Failed to settle creation fee: ${error.message}`
                         );
                       }}
-                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-6 text-base border-2 border-blue-600 shadow-lg shadow-blue-500/30"
+                      className="w-full bg-info hover:bg-info/90 text-info-foreground font-bold py-6 text-base border-2 border-info shadow-lg shadow-info/30"
                     >
                       <DollarSign className="mr-2 h-5 w-5" />
                       Settle Creation Fee (80% Refund if ≥100 Participants)
@@ -1568,7 +1567,7 @@ export default function HackathonDetailPage() {
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full border-2 border-green-500/30 hover:border-green-500/50 hover:bg-green-500/10 font-bold py-6 text-base cursor-pointer"
+                        className="w-full border-2 border-success/30 hover:border-success/50 hover:bg-success/10 font-bold py-6 text-base cursor-pointer"
                         disabled={!account?.address || loadingTeams}
                       >
                         <DollarSign className="mr-2 h-5 w-5" />
@@ -1612,11 +1611,11 @@ export default function HackathonDetailPage() {
                           !loadingTeams &&
                           userTeams.length > 0 && (
                             <>
-                              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                              <div className="bg-success/10 border border-success/30 rounded-lg p-4">
                                 <p className="text-sm font-semibold mb-2">
                                   Refund Amount per Team:
                                 </p>
-                                <p className="text-3xl font-bold text-green-400">
+                                <p className="text-3xl font-bold text-success">
                                   {formatEther(hackathon.stakeAmount)} ETH
                                 </p>
                               </div>
@@ -1663,17 +1662,17 @@ export default function HackathonDetailPage() {
                                                 : ""}
                                             </p>
                                             {!isStaked && (
-                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-semibold">
                                                 Not Staked
                                               </div>
                                             )}
                                             {isStaked && !isStaker && (
-                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-semibold">
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-warning/20 text-warning rounded-full text-xs font-semibold">
                                                 Staked by Another Member
                                               </div>
                                             )}
                                             {canRefund && (
-                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                                                 <DollarSign className="h-3 w-3" />
                                                 Refund Available
                                               </div>
@@ -1734,7 +1733,7 @@ export default function HackathonDetailPage() {
                                     `Refund failed: ${error.message}`
                                   );
                                 }}
-                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-6"
+                                className="w-full bg-success hover:bg-success/90 text-white font-bold py-6"
                               >
                                 Claim {formatEther(hackathon.stakeAmount)} ETH
                                 Refund for Team #{selectedTeamId}

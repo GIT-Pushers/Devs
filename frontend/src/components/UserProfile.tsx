@@ -11,7 +11,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, LogOut, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  User as UserIcon,
+  LogOut,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { VerificationModal } from "./VerificationModal";
 
@@ -49,13 +54,13 @@ export default function UserProfile() {
     };
 
     fetchSession();
-    
+
     // Refresh session on focus
     const handleFocus = () => {
       fetchSession();
     };
     window.addEventListener("focus", handleFocus);
-    
+
     return () => {
       window.removeEventListener("focus", handleFocus);
     };
@@ -70,7 +75,7 @@ export default function UserProfile() {
       try {
         const verified = await readContract({
           contract: githubVerifierContract,
-          method: 'function isGitHubVerified(address user) view returns (bool)',
+          method: "function isGitHubVerified(address user) view returns (bool)",
           params: [account.address],
         });
 
@@ -135,9 +140,9 @@ export default function UserProfile() {
             {!checkingVerification && (
               <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-background flex items-center justify-center">
                 {isVerified ? (
-                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  <CheckCircle className="w-3 h-3 text-success" />
                 ) : (
-                  <AlertCircle className="w-3 h-3 text-yellow-500" />
+                  <AlertCircle className="w-3 h-3 text-warning" />
                 )}
               </div>
             )}
@@ -155,13 +160,13 @@ export default function UserProfile() {
               <div className="flex items-center gap-1 mt-2">
                 {isVerified ? (
                   <>
-                    <CheckCircle className="w-3 h-3 text-green-500" />
-                    <span className="text-xs text-green-600 dark:text-green-400">Verified</span>
+                    <CheckCircle className="w-3 h-3 text-success" />
+                    <span className="text-xs text-success">Verified</span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs text-yellow-600 dark:text-yellow-400">Not Verified</span>
+                    <AlertCircle className="w-3 h-3 text-warning" />
+                    <span className="text-xs text-warning">Not Verified</span>
                   </>
                 )}
               </div>
@@ -209,4 +214,3 @@ export default function UserProfile() {
     </>
   );
 }
-

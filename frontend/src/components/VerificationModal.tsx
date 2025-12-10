@@ -1,17 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { prepareContractCall, sendTransaction, readContract } from "thirdweb";
+import { prepareContractCall, sendTransaction } from "thirdweb";
 import { githubVerifierContract } from "@/app/constants/contracts";
 import { X } from "lucide-react";
+
+interface GitHubUser {
+  id: string | number;
+  login: string;
+  name?: string;
+}
+
+interface VerificationData {
+  githubId: string;
+  githubUsername: string;
+  nonce: string;
+  timestamp: number;
+  signature: string;
+  githubUser?: GitHubUser;
+}
 
 interface VerificationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  githubUser: any;
+  githubUser: GitHubUser | null;
 }
 
 export function VerificationModal({
@@ -20,7 +35,8 @@ export function VerificationModal({
   githubUser,
 }: VerificationModalProps) {
   const [step, setStep] = useState<"sign" | "submit" | "complete">("sign");
-  const [verificationData, setVerificationData] = useState<any>(null);
+  const [verificationData, setVerificationData] =
+    useState<VerificationData | null>(null);
   const [txHash, setTxHash] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +75,7 @@ export function VerificationModal({
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.details || errorMessage;
-        } catch (parseError) {
+        } catch {
           // If we can't parse JSON, use status text
           const text = await response.text();
           console.error(
@@ -73,9 +89,9 @@ export function VerificationModal({
 
       const data = await response.json();
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Prepare verification error:", err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An error occurred");
       throw err;
     } finally {
       setIsLoading(false);
@@ -139,8 +155,8 @@ export function VerificationModal({
       const result = await verifyResponse.json();
       setVerificationData(result.data);
       setStep("submit");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +178,7 @@ export function VerificationModal({
           verificationData.githubUsername,
           BigInt(`0x${verificationData.nonce}`),
           BigInt(verificationData.timestamp),
-          verificationData.signature,
+          verificationData.signature as `0x${string}`,
         ],
       });
 
@@ -173,8 +189,8 @@ export function VerificationModal({
 
       setTxHash(result.transactionHash);
       setStep("complete");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +244,7 @@ export function VerificationModal({
               Sign a message to prove you own this wallet
             </p>
             {error && (
-              <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm">
+              <div className="p-3 bg-destructive/20 text-destructive rounded text-sm">
                 {error}
               </div>
             )}
@@ -248,7 +264,7 @@ export function VerificationModal({
               Submit your verification to the blockchain
             </p>
             {error && (
-              <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm">
+              <div className="p-3 bg-destructive/20 text-destructive rounded text-sm">
                 {error}
               </div>
             )}
@@ -264,7 +280,7 @@ export function VerificationModal({
 
         {step === "complete" && (
           <div className="space-y-4">
-            <div className="p-4 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded">
+            <div className="p-4 bg-success/20 text-success rounded">
               <p className="font-semibold">✓ Verification Complete!</p>
               {txHash && (
                 <p className="text-sm mt-2">

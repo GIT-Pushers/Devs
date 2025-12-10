@@ -333,12 +333,12 @@ export default function MintNFTPage() {
 
         {/* NFT Minting Card */}
         {nftMinted ? (
-          <Card className="border-2 border-green-500/50 bg-green-500/10 shadow-xl">
+          <Card className="border-2 border-success/50 bg-success/10 shadow-xl">
             <CardContent className="py-12">
               <div className="text-center space-y-6">
-                <CheckCircle className="h-20 w-20 text-green-500 mx-auto" />
+                <CheckCircle className="h-20 w-20 text-success mx-auto" />
                 <div>
-                  <h2 className="text-3xl font-bold text-green-500 mb-2">
+                  <h2 className="text-3xl font-bold text-success mb-2">
                     NFT Minted Successfully!
                   </h2>
                   <p className="text-muted-foreground mb-6">
@@ -434,8 +434,8 @@ export default function MintNFTPage() {
 
               {/* Score Status */}
               {!registration.scoreFinalized && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg">
-                  <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                <div className="bg-warning/10 border border-warning/30 p-4 rounded-lg">
+                  <p className="text-sm text-warning">
                     ⚠️ Note: Scores are not yet finalized. You can still mint
                     your NFT, but the final scores and ranking may change.
                   </p>
@@ -443,8 +443,8 @@ export default function MintNFTPage() {
               )}
 
               {registration.scoreFinalized && (
-                <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-lg">
-                  <p className="text-sm text-green-600 dark:text-green-400">
+                <div className="bg-success/10 border border-success/30 p-4 rounded-lg">
+                  <p className="text-sm text-success">
                     ✓ Scores have been finalized! Your NFT will reflect the
                     final results.
                   </p>

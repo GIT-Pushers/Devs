@@ -21,7 +21,6 @@ import {
   Building2,
   Trophy,
   Sparkles,
-  Users,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -143,7 +142,7 @@ export default function HackathonSponsorsPage() {
             <Trophy className="h-24 w-24 text-muted-foreground mb-6" />
             <h2 className="text-3xl font-bold mb-2">Hackathon Not Found</h2>
             <p className="text-muted-foreground text-lg">
-              The hackathon you're looking for doesn't exist.
+              The hackathon you&apos;re looking for doesn&apos;t exist.
             </p>
           </div>
         </div>
@@ -167,7 +166,7 @@ export default function HackathonSponsorsPage() {
             <Building2 className="h-24 w-24 text-muted-foreground mb-6" />
             <h2 className="text-3xl font-bold mb-2">No Sponsors Yet</h2>
             <p className="text-muted-foreground text-lg mb-6">
-              This hackathon hasn't received any sponsorships yet.
+              This hackathon hasn&apos;t received any sponsorships yet.
             </p>
             <Button onClick={() => router.push(`/sponsor/${hackathonId}`)}>
               <Coins className="w-4 h-4 mr-2" />
@@ -260,7 +259,7 @@ export default function HackathonSponsorsPage() {
                 <CardHeader className="pb-4">
                   <div className="flex items-start gap-4">
                     {sponsor.metadata?.logoUrl ? (
-                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 flex-shrink-0">
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 shrink-0">
                         <Image
                           src={sponsor.metadata.logoUrl}
                           alt={sponsor.metadata.companyName || "Company"}
@@ -269,7 +268,7 @@ export default function HackathonSponsorsPage() {
                         />
                       </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <div className="w-20 h-20 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center shrink-0">
                         <Building2 className="w-10 h-10 text-primary" />
                       </div>
                     )}

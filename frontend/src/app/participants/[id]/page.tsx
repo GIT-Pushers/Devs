@@ -270,7 +270,7 @@ export default function ParticipantsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-green-500/20 bg-gradient-to-br from-green-500/10 to-green-500/5">
+          <Card className="border-2 border-success/20 bg-gradient-to-br from-success/10 to-success/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Registered
@@ -278,13 +278,13 @@ export default function ParticipantsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 <p className="text-3xl font-bold">{stats.registered}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
+          <Card className="border-2 border-warning/20 bg-gradient-to-br from-warning/10 to-warning/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Staked
@@ -292,13 +292,13 @@ export default function ParticipantsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-yellow-500" />
+                <Lock className="h-5 w-5 text-warning" />
                 <p className="text-3xl font-bold">{stats.staked}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+          <Card className="border-2 border-info/20 bg-gradient-to-br from-info/10 to-info/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Submitted
@@ -306,7 +306,7 @@ export default function ParticipantsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-blue-500" />
+                <Trophy className="h-5 w-5 text-info" />
                 <p className="text-3xl font-bold">{stats.submitted}</p>
               </div>
             </CardContent>
@@ -363,19 +363,19 @@ export default function ParticipantsPage() {
                   {/* Status Badges */}
                   <div className="flex flex-wrap gap-2">
                     {team.registration.registered && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-success/20 text-success rounded-full text-xs font-semibold">
                         <CheckCircle className="h-3 w-3" />
                         Registered
                       </span>
                     )}
                     {team.registration.staked && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-warning/20 text-warning rounded-full text-xs font-semibold">
                         <Lock className="h-3 w-3" />
                         Staked
                       </span>
                     )}
                     {team.registration.projectSubmitted && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-info/20 text-info rounded-full text-xs font-semibold">
                         <Trophy className="h-3 w-3" />
                         Submitted
                       </span>
@@ -478,23 +478,23 @@ export default function ParticipantsPage() {
                         Scores
                       </p>
                       <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-purple-500/10 p-2 rounded">
+                        <div className="bg-primary/10 p-2 rounded">
                           <p className="text-xs text-muted-foreground">AI</p>
-                          <p className="font-bold text-purple-400">
+                          <p className="font-bold text-primary">
                             {Number(team.registration.aiScore)}
                           </p>
                         </div>
-                        <div className="bg-blue-500/10 p-2 rounded">
+                        <div className="bg-info/10 p-2 rounded">
                           <p className="text-xs text-muted-foreground">Judge</p>
-                          <p className="font-bold text-blue-400">
+                          <p className="font-bold text-info">
                             {Number(team.registration.judgeScore)}
                           </p>
                         </div>
-                        <div className="bg-green-500/10 p-2 rounded">
+                        <div className="bg-success/10 p-2 rounded">
                           <p className="text-xs text-muted-foreground">
                             Participant
                           </p>
-                          <p className="font-bold text-green-400">
+                          <p className="font-bold text-success">
                             {Number(team.registration.participantScore)}
                           </p>
                         </div>

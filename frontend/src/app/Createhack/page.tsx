@@ -730,7 +730,7 @@ const CreateHackathonForm = () => {
                     </span>
                     judges added{" "}
                     {fields.length >= 5 && (
-                      <Check className="w-4 h-4 text-green-500 ml-auto" />
+                      <Check className="w-4 h-4 text-success ml-auto" />
                     )}
                   </p>
                 </div>
@@ -1288,7 +1288,7 @@ const CreateHackathonForm = () => {
                       </div>
                       <div className="space-y-1 text-sm">
                         <div className="flex items-center gap-2 text-foreground">
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-success" />
                           <span>
                             <span className="font-semibold">80% refunded</span>{" "}
                             if <span className="font-semibold">100+ teams</span>{" "}

@@ -7,7 +7,8 @@ import { mainContract } from "@/app/constants/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, ExternalLink, Calendar } from "lucide-react";
+import { ArrowLeft, Users, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 interface TeamMetadata {
   name: string;
@@ -199,7 +200,7 @@ export default function MyTeamsPage() {
               <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
               <h2 className="text-2xl font-bold mb-2">No Teams Yet</h2>
               <p className="text-muted-foreground mb-6">
-                You haven't created or joined any teams yet
+                You haven&apos;t created or joined any teams yet
               </p>
               <Button onClick={() => router.push("/home")}>
                 Browse Hackathons
@@ -229,14 +230,15 @@ export default function MyTeamsPage() {
                       )}
                     </div>
                     {team.metadata?.image && (
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-border flex-shrink-0">
-                        <img
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-border shrink-0 relative">
+                        <Image
                           src={team.metadata.image.replace(
                             "ipfs://",
                             "https://gateway.pinata.cloud/ipfs/"
                           )}
                           alt={team.metadata.name || "Team"}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       </div>
                     )}
@@ -289,7 +291,7 @@ export default function MyTeamsPage() {
                       </p>
                       {team.creator.toLowerCase() ===
                         account.address.toLowerCase() && (
-                        <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold">
+                        <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold shrink-0">
                           YOU
                         </span>
                       )}
@@ -311,7 +313,7 @@ export default function MyTeamsPage() {
                           </p>
                           {member.toLowerCase() ===
                             account.address.toLowerCase() && (
-                            <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold flex-shrink-0">
+                            <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold shrink-0">
                               YOU
                             </span>
                           )}

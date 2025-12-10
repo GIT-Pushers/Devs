@@ -12,7 +12,14 @@ import {
 } from "@/components/ui/card";
 import { readContract } from "thirdweb";
 import { useRouter } from "next/navigation";
-import { Calendar, Users, Coins, Trophy, ArrowRight, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Coins,
+  Trophy,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Hackathon {
@@ -123,7 +130,9 @@ const HackathonDisplayPage = () => {
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center">
           <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-2 text-white">No Hackathons Yet</h2>
+          <h2 className="text-3xl font-bold mb-2 text-white">
+            No Hackathons Yet
+          </h2>
           <p className="text-muted-foreground text-lg">
             Be the first to create a hackathon!
           </p>
@@ -147,7 +156,8 @@ const HackathonDisplayPage = () => {
             Discover & Compete
           </h1>
           <p className="text-xl text-muted-foreground">
-            {hackathonCount?.toString()} active hackathon{hackathonCount !== BigInt(1) ? 's' : ''} ready for you
+            {hackathonCount?.toString()} active hackathon
+            {hackathonCount !== BigInt(1) ? "s" : ""} ready for you
           </p>
         </div>
 
@@ -167,8 +177,10 @@ const HackathonDisplayPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hackathons.map((hackathon, index) => {
-            const isActive = Number(hackathon.hackStart) * 1000 <= Date.now() && Number(hackathon.hackEnd) * 1000 >= Date.now();
-            
+            const isActive =
+              Number(hackathon.hackStart) * 1000 <= Date.now() &&
+              Number(hackathon.hackEnd) * 1000 >= Date.now();
+
             return (
               <Card
                 key={index}
@@ -182,11 +194,12 @@ const HackathonDisplayPage = () => {
                         Hackathon #{hackathon.id.toString()}
                       </CardTitle>
                       <CardDescription className="text-[10px] text-muted-foreground truncate">
-                        {hackathon.organizer.slice(0, 6)}...{hackathon.organizer.slice(-4)}
+                        {hackathon.organizer.slice(0, 6)}...
+                        {hackathon.organizer.slice(-4)}
                       </CardDescription>
                     </div>
                     {hackathon.finalized ? (
-                      <span className="text-[10px] bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                      <span className="text-[10px] bg-success/20 text-success border border-success/30 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                         Finalized
                       </span>
                     ) : isActive ? (
@@ -206,7 +219,8 @@ const HackathonDisplayPage = () => {
                         Sponsorship
                       </p>
                       <p className="text-xs text-white font-medium leading-tight">
-                        {formatDate(hackathon.sponsorshipStart)} - {formatDate(hackathon.sponsorshipEnd)}
+                        {formatDate(hackathon.sponsorshipStart)} -{" "}
+                        {formatDate(hackathon.sponsorshipEnd)}
                       </p>
                     </div>
                   </div>
@@ -219,7 +233,8 @@ const HackathonDisplayPage = () => {
                         Hackathon
                       </p>
                       <p className="text-xs text-white font-medium leading-tight">
-                        {formatDate(hackathon.hackStart)} - {formatDate(hackathon.hackEnd)}
+                        {formatDate(hackathon.hackStart)} -{" "}
+                        {formatDate(hackathon.hackEnd)}
                       </p>
                     </div>
                   </div>
@@ -229,7 +244,9 @@ const HackathonDisplayPage = () => {
                     <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <Users className="h-3 w-3 text-primary" />
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Teams</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                          Teams
+                        </p>
                       </div>
                       <p className="text-sm font-bold text-white">
                         {hackathon.minTeams} - {hackathon.maxTeams}
@@ -238,7 +255,9 @@ const HackathonDisplayPage = () => {
                     <div className="p-2 rounded-lg bg-muted/10 border border-border/30">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <Coins className="h-3 w-3 text-primary" />
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Stake</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                          Stake
+                        </p>
                       </div>
                       <p className="text-sm font-bold text-white">
                         {formatEther(hackathon.stakeAmount)} ETH
@@ -262,7 +281,9 @@ const HackathonDisplayPage = () => {
 
                 <CardFooter className="pt-0 px-4 pb-4">
                   <Button
-                    onClick={() => router.push(`/home/${hackathon.id.toString()}`)}
+                    onClick={() =>
+                      router.push(`/home/${hackathon.id.toString()}`)
+                    }
                     className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm py-2 h-9 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300"
                   >
                     View Details

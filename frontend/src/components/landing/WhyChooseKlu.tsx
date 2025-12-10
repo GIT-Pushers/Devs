@@ -103,7 +103,7 @@ export function WhyChooseHackX() {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                      <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
                       <span className="text-muted-foreground">
                         Active - 3 days remaining
                       </span>
