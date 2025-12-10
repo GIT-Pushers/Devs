@@ -228,8 +228,7 @@ export default function SubmissionPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          owner: selectedRepo.owner.login,
-          repo: selectedRepo.name,
+          repoUrl: selectedRepo.html_url,
         }),
       });
 
@@ -240,7 +239,7 @@ export default function SubmissionPage() {
       const data = await response.json();
       setAnalysisReport({
         repository: selectedRepo.full_name,
-        aiScore: data.aiScore || 0,
+        aiScore: Math.round(data.trust_score * 100) / 100,
         report: data,
       });
 
@@ -589,7 +588,7 @@ export default function SubmissionPage() {
                       Analysis Complete!
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">AI Score:</span>
+                      <span className="text-muted-foreground">Trust Score:</span>
                       <span className="text-3xl font-bold text-success">
                         {analysisReport.aiScore}/100
                       </span>
@@ -600,7 +599,7 @@ export default function SubmissionPage() {
                       Analysis Report:
                     </p>
                     <pre className="text-xs whitespace-pre-wrap">
-                      {JSON.stringify(analysisReport.report, null, 2)}
+                      {JSON.stringify(analysisReport.report.ai_summary, null, 2)}
                     </pre>
                   </div>
                 </div>

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Extract GitHub username - handle display names vs actual GitHub usernames
     let username;
-    
+
     // TODO: Properly implement OAuth access token retrieval
     // Currently using environment token as fallback
     // For proper implementation, need to:
@@ -50,7 +50,11 @@ export async function GET(req: NextRequest) {
         username = userData.login;
         console.log("Using GitHub username from API:", username);
       } else {
-        console.error("GitHub user API error:", userResponse.status, userResponse.statusText);
+        console.error(
+          "GitHub user API error:",
+          userResponse.status,
+          userResponse.statusText
+        );
       }
     } catch (error) {
       console.error("Error fetching user data from GitHub:", error);
@@ -60,19 +64,24 @@ export async function GET(req: NextRequest) {
     if (!username && session.user.name) {
       let sessionUsername = session.user.name.toLowerCase();
       // Remove spaces and special characters that aren't valid in GitHub usernames
-      sessionUsername = sessionUsername.replace(/\s+/g, '').replace(/[^a-z0-9-]/g, '');
-      
+      sessionUsername = sessionUsername
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9-]/g, "");
+
       if (sessionUsername && sessionUsername.length > 0) {
         // Validate by trying to fetch user info
         try {
-          const testResponse = await fetch(`https://api.github.com/users/${sessionUsername}`, {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: "application/vnd.github+json",
-              "User-Agent": "repo-analyzer",
-            },
-          });
-          
+          const testResponse = await fetch(
+            `https://api.github.com/users/${sessionUsername}`,
+            {
+              headers: {
+                Authorization: `Bearer ${githubToken}`,
+                Accept: "application/vnd.github+json",
+                "User-Agent": "repo-analyzer",
+              },
+            }
+          );
+
           if (testResponse.ok) {
             username = sessionUsername;
             console.log("Using cleaned session username:", username);
@@ -86,18 +95,21 @@ export async function GET(req: NextRequest) {
     // Try email-based username if still no valid username
     if (!username && session.user.email) {
       let emailUsername = session.user.email.split("@")[0].toLowerCase();
-      emailUsername = emailUsername.replace(/[^a-z0-9-]/g, '');
-      
+      emailUsername = emailUsername.replace(/[^a-z0-9-]/g, "");
+
       if (emailUsername && emailUsername.length > 0) {
         try {
-          const testResponse = await fetch(`https://api.github.com/users/${emailUsername}`, {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-              Accept: "application/vnd.github+json",
-              "User-Agent": "repo-analyzer",
-            },
-          });
-          
+          const testResponse = await fetch(
+            `https://api.github.com/users/${emailUsername}`,
+            {
+              headers: {
+                Authorization: `Bearer ${githubToken}`,
+                Accept: "application/vnd.github+json",
+                "User-Agent": "repo-analyzer",
+              },
+            }
+          );
+
           if (testResponse.ok) {
             username = emailUsername;
             console.log("Using email-derived username:", username);

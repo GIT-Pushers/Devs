@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { authClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github, CheckCircle, ExternalLink, Code, Sparkles } from "lucide-react";
+import {
+  Github,
+  CheckCircle,
+  ExternalLink,
+  Code,
+  Sparkles,
+} from "lucide-react";
 import SignInButton from "@/components/SignInButton";
 
 interface Repository {
@@ -196,13 +202,17 @@ export default function SubmissionPage() {
 
         {!analysisResult ? (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Your Repositories</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">
+              Your Repositories
+            </h2>
 
             {repositories.length === 0 ? (
               <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20">
                 <CardContent className="p-12 text-center">
                   <Github className="h-16 w-16 text-primary mx-auto mb-4 opacity-50" />
-                  <p className="text-muted-foreground text-lg">No repositories found</p>
+                  <p className="text-muted-foreground text-lg">
+                    No repositories found
+                  </p>
                 </CardContent>
               </Card>
             ) : (
@@ -228,7 +238,9 @@ export default function SubmissionPage() {
                       </p>
 
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-primary font-medium">{repo.language || "Unknown"}</span>
+                        <span className="text-primary font-medium">
+                          {repo.language || "Unknown"}
+                        </span>
                         <span className="flex items-center gap-1 text-muted-foreground">
                           ⭐ {repo.stargazers_count}
                         </span>
@@ -289,14 +301,18 @@ export default function SubmissionPage() {
                   <div className="text-5xl font-extrabold text-white mb-2">
                     {Math.round(analysisResult.trust_score * 100) / 100}/100
                   </div>
-                  <p className="text-muted-foreground font-semibold uppercase tracking-wide">Trust Score</p>
+                  <p className="text-muted-foreground font-semibold uppercase tracking-wide">
+                    Trust Score
+                  </p>
                 </div>
 
                 {/* Score Breakdown */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-white">Score Breakdown</CardTitle>
+                      <CardTitle className="text-lg text-white">
+                        Score Breakdown
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {Object.entries(analysisResult.explanations).map(
@@ -316,23 +332,31 @@ export default function SubmissionPage() {
 
                   <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-white">Repository Stats</CardTitle>
+                      <CardTitle className="text-lg text-white">
+                        Repository Stats
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground font-semibold">Commits:</span>
+                        <span className="text-muted-foreground font-semibold">
+                          Commits:
+                        </span>
                         <span className="text-white font-bold">
                           {analysisResult.commits_count}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground font-semibold">Files:</span>
+                        <span className="text-muted-foreground font-semibold">
+                          Files:
+                        </span>
                         <span className="text-white font-bold">
                           {analysisResult.file_count}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground font-semibold">Owner:</span>
+                        <span className="text-muted-foreground font-semibold">
+                          Owner:
+                        </span>
                         <span className="text-white font-bold">
                           {analysisResult.owner}
                         </span>
@@ -344,7 +368,9 @@ export default function SubmissionPage() {
                 {/* Technology Detection */}
                 <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white">Technology Detection</CardTitle>
+                    <CardTitle className="text-lg text-white">
+                      Technology Detection
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -397,11 +423,15 @@ export default function SubmissionPage() {
                 {/* AI-Detected Technologies */}
                 <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white">AI-Detected Technologies</CardTitle>
+                    <CardTitle className="text-lg text-white">
+                      AI-Detected Technologies
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {Object.entries(analysisResult.ai_detected_tech || {}).map(
+                      {Object.entries(
+                        analysisResult.ai_detected_tech || {}
+                      ).map(
                         ([category, technologies]) =>
                           technologies.length > 0 && (
                             <div key={category} className="space-y-2">
@@ -431,12 +461,16 @@ export default function SubmissionPage() {
                 {analysisResult.fraud_reasons.length > 0 && (
                   <Card className="bg-destructive/20 border-2 border-destructive/30">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-destructive">Issues Detected</CardTitle>
+                      <CardTitle className="text-lg text-destructive">
+                        Issues Detected
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                         {analysisResult.fraud_reasons.map((reason, index) => (
-                          <li key={index} className="text-white">{reason}</li>
+                          <li key={index} className="text-white">
+                            {reason}
+                          </li>
                         ))}
                       </ul>
                     </CardContent>
@@ -446,7 +480,9 @@ export default function SubmissionPage() {
                 {/* AI Summary */}
                 <Card className="bg-black/40 border-2 border-primary/20 backdrop-blur-sm">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white">AI Analysis Summary</CardTitle>
+                    <CardTitle className="text-lg text-white">
+                      AI Analysis Summary
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="bg-black/60 p-4 rounded-lg border border-primary/10">
@@ -470,7 +506,10 @@ export default function SubmissionPage() {
                   >
                     Analyze Another Repository
                   </Button>
-                  <Button asChild className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/30 border-2 border-primary/40">
+                  <Button
+                    asChild
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/30 border-2 border-primary/40"
+                  >
                     <a
                       href={selectedRepo?.html_url}
                       target="_blank"

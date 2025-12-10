@@ -522,6 +522,7 @@ Tasks:
 4) Flag suspicious patterns.
 5) Give AI trust score (0–100).
 6) Final one-line verdict.
+dont return markdown just plain text
 `;
 
     let aiText = "";
