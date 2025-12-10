@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { mainContract } from "../../../constants/contracts";
+import { mainContract } from "@/constants/contracts";
 
 type Hack = {
   id: string;

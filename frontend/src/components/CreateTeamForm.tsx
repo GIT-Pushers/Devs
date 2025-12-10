@@ -1,10 +1,14 @@
 "use client";
 import React, { useState } from 'react';
 import { Key, CheckCircle2, ShieldCheck, AlertCircle, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useActiveAccount } from 'thirdweb/react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { FileUploader } from './ui/fileupload';
+import { useTeamManagement } from '@/hooks/useTeamManagement';
+import WalletConnectionButton from './WalletConnectionButton';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 interface TeamFormData {
@@ -22,15 +26,20 @@ export const CreateTeamForm: React.FC = () => {
     image: null,
   });
 
-  const [showJoinCode, setShowJoinCode] = useState(false);
-
   const [errors, setErrors] = useState<Partial<Record<keyof TeamFormData, string>>>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [txHash, setTxHash] = useState<string>('');
+  
+  const router = useRouter();
+  const account = useActiveAccount();
+  const { createTeam, isLoading, error: contractError } = useTeamManagement();
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
     if (!formData.name.trim()) newErrors.name = 'Team name is required';
+    if (formData.name.length < 3) newErrors.name = 'Team name must be at least 3 characters';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (formData.description.length < 10) newErrors.description = 'Description must be at least 10 characters';
     if (!formData.image) newErrors.image = 'Team image is required';
     if (!formData.joinCode) {
       newErrors.joinCode = 'Join code is required';
@@ -46,19 +55,53 @@ export const CreateTeamForm: React.FC = () => {
     e.preventDefault();
     if (!validate()) return;
 
+    if (!account) {
+      setErrors({ name: 'Please connect your wallet first' });
+      return;
+    }
+
     setStatus('submitting');
-
-    // Simulate network delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    setStatus('success');
+    
+    try {
+      const result = await createTeam({
+        teamName: formData.name,
+        teamDescription: formData.description,
+        joinCode: formData.joinCode,
+        teamImage: formData.image || undefined,
+      });
+      
+      console.log('Team created:', result);
+      setTxHash(result.transactionHash);
+      setStatus('success');
+    } catch (err: any) {
+      console.error('Create team error:', err);
+      setStatus('error');
+    }
   };
 
   const resetForm = () => {
     setFormData({ name: '', description: '', joinCode: '', image: null });
     setStatus('idle');
     setErrors({});
+    setTxHash('');
+    router.push('/home');
   };
+
+  // Show wallet connection prompt if not connected
+  if (!account) {
+    return (
+      <div className="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm text-center max-w-lg mx-auto">
+        <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <ShieldCheck className="w-8 h-8 text-neutral-600" />
+        </div>
+        <h3 className="text-2xl font-bold text-neutral-900 mb-2">Connect Your Wallet</h3>
+        <p className="text-neutral-600 mb-8">
+          You need to connect your wallet to create a team on the blockchain.
+        </p>
+        <WalletConnectionButton />
+      </div>
+    );
+  }
 
   if (status === 'success') {
     return (
@@ -71,7 +114,7 @@ export const CreateTeamForm: React.FC = () => {
         </CardHeader>
         <CardContent className="pt-6">
           <p className="text-muted-foreground mb-8 text-lg">
-            Your team has been successfully registered. You can now invite members using your secure join code.
+            Your team has been successfully registered on the blockchain. You can now invite members using your secure join code.
           </p>
 
           <div className="bg-black/40 rounded-xl p-5 text-left space-y-4 mb-8 border-2 border-primary/20 backdrop-blur-sm">
@@ -85,10 +128,18 @@ export const CreateTeamForm: React.FC = () => {
                  Active
                </span>
              </div>
+             {txHash && (
+               <div className="pt-2 border-t border-primary/20">
+                 <span className="text-sm font-bold text-muted-foreground uppercase tracking-wide block mb-1">Transaction</span>
+                 <span className="text-xs font-mono text-white break-all">
+                   {txHash.slice(0, 10)}...{txHash.slice(-8)}
+                 </span>
+               </div>
+             )}
           </div>
 
-          <Button onClick={resetForm} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer">
-            Create Another Team
+          <Button onClick={resetForm} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40">
+            Go to Home
           </Button>
         </CardContent>
       </Card>
@@ -104,7 +155,7 @@ export const CreateTeamForm: React.FC = () => {
           </div>
           Create New Team
         </CardTitle>
-        <p className="text-muted-foreground mt-2">Register your team profile for the HackX hackathon.</p>
+        <p className="text-muted-foreground mt-2">Register your team profile for the HackX hackathon on the blockchain.</p>
       </CardHeader>
 
       <CardContent className="pt-6">
@@ -119,6 +170,7 @@ export const CreateTeamForm: React.FC = () => {
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+                disabled={status === 'submitting' || isLoading}
               />
               {errors.name && <p className="text-destructive text-sm mt-2 font-medium">{errors.name}</p>}
             </div>
@@ -132,6 +184,7 @@ export const CreateTeamForm: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50 min-h-[100px]"
+                disabled={status === 'submitting' || isLoading}
               />
               {errors.description && <p className="text-destructive text-sm mt-2 font-medium">{errors.description}</p>}
             </div>
@@ -167,6 +220,7 @@ export const CreateTeamForm: React.FC = () => {
                     value={formData.joinCode}
                     onChange={(e) => setFormData(prev => ({ ...prev, joinCode: e.target.value }))}
                     className="bg-black/60 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
+                    disabled={status === 'submitting' || isLoading}
                   />
                   {errors.joinCode && <p className="text-destructive text-sm mt-2 font-medium">{errors.joinCode}</p>}
                 </div>
@@ -178,20 +232,20 @@ export const CreateTeamForm: React.FC = () => {
             </Card>
           </div>
 
-          {status === 'error' && (
+          {(status === 'error' || contractError) && (
             <div className="p-4 bg-destructive/20 border-2 border-destructive/30 rounded-lg flex items-center gap-3 text-destructive">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p className="font-medium">Something went wrong during creation. Please try again.</p>
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <p className="font-medium">{contractError || 'Something went wrong during creation. Please try again.'}</p>
             </div>
           )}
 
           <div className="pt-4">
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
-              disabled={status === 'submitting'}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40"
+              disabled={status === 'submitting' || isLoading}
             >
-              {status === 'submitting' ? 'Creating Team...' : 'Create Team'}
+              {status === 'submitting' || isLoading ? 'Creating Team...' : 'Create Team'}
             </Button>
           </div>
         </form>
