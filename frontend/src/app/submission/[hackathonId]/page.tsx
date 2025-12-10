@@ -19,8 +19,11 @@ import {
   FileCode,
   Award,
   ExternalLink,
+  Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { mainContract } from "@/constants/contracts";
 import { toast } from "sonner";
 
@@ -80,51 +83,22 @@ export default function SubmissionPage() {
   const { mutate: sendTransaction, isPending: isTransactionPending } =
     useSendTransaction();
 
-  const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [userTeams, setUserTeams] = useState<
     (Team & { metadata?: TeamMetadata })[]
   >([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
+  const [repoUrl, setRepoUrl] = useState<string>("");
+  const [verifyingOwnership, setVerifyingOwnership] = useState(false);
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(
     null
   );
   const [submissionHash, setSubmissionHash] = useState<string | null>(null);
 
-  const [loadingRepos, setLoadingRepos] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-
-  // Fetch user's GitHub repositories
-  useEffect(() => {
-    const fetchRepos = async () => {
-      if (!account?.address) return;
-
-      try {
-        setLoadingRepos(true);
-        const response = await fetch("/api/github/repos");
-
-        if (!response.ok) {
-          toast.error(
-            "Failed to fetch repositories. Please login with GitHub."
-          );
-          return;
-        }
-
-        const data = await response.json();
-        setRepos(data);
-      } catch (error) {
-        console.error("Error fetching repos:", error);
-        toast.error("Error loading repositories");
-      } finally {
-        setLoadingRepos(false);
-      }
-    };
-
-    fetchRepos();
-  }, [account?.address]);
 
   // Fetch user's teams and check registration status
   useEffect(() => {
@@ -218,6 +192,94 @@ export default function SubmissionPage() {
       fetchTeams();
     }
   }, [hackathonId, account?.address]);
+
+  const validateAndVerifyRepo = async () => {
+    if (!repoUrl.trim()) {
+      toast.error("Please enter a repository URL");
+      return;
+    }
+
+    // Validate GitHub URL format
+    const githubUrlPattern =
+      /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?(?:\/.*)?$/;
+    const match = repoUrl.match(githubUrlPattern);
+
+    if (!match) {
+      toast.error("Please enter a valid GitHub repository URL");
+      return;
+    }
+
+    const [, owner, repoName] = match;
+
+    setVerifyingOwnership(true);
+    try {
+      // First, get the authenticated user's GitHub username
+      const userResponse = await fetch("/api/getRepo");
+      if (!userResponse.ok) {
+        toast.error("Failed to verify GitHub authentication");
+        return;
+      }
+
+      const userData = await userResponse.json();
+      const authenticatedUsername = userData.username;
+
+      if (!authenticatedUsername) {
+        toast.error("Could not determine your GitHub username");
+        return;
+      }
+
+      // Check if the repository owner matches the authenticated user
+      if (owner.toLowerCase() !== authenticatedUsername.toLowerCase()) {
+        toast.error(
+          `Repository must be owned by your authenticated GitHub account (${authenticatedUsername})`
+        );
+        return;
+      }
+
+      // Fetch repository details to verify it exists and get metadata
+      const repoResponse = await fetch(
+        `https://api.github.com/repos/${owner}/${repoName}`,
+        {
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_API_KEY}`,
+            "User-Agent": "repo-analyzer",
+          },
+        }
+      );
+
+      if (!repoResponse.ok) {
+        if (repoResponse.status === 404) {
+          toast.error("Repository not found or is private");
+        } else {
+          toast.error("Failed to fetch repository details");
+        }
+        return;
+      }
+
+      const repoData = await repoResponse.json();
+
+      // Set the selected repository with the fetched data
+      setSelectedRepo({
+        id: repoData.id,
+        name: repoData.name,
+        full_name: repoData.full_name,
+        html_url: repoData.html_url,
+        description: repoData.description,
+        language: repoData.language,
+        owner: {
+          login: repoData.owner.login,
+        },
+      });
+
+      toast.success(`Repository verified! You own ${repoData.full_name}`);
+    } catch (error) {
+      console.error("Error verifying repository ownership:", error);
+      toast.error("Failed to verify repository ownership");
+    } finally {
+      setVerifyingOwnership(false);
+    }
+  };
 
   const handleAnalyzeRepo = async () => {
     if (!selectedRepo) return;
@@ -467,70 +529,108 @@ export default function SubmissionPage() {
             </CardContent>
           </Card>
 
-          {/* Step 2: Select Repository */}
+          {/* Step 2: Enter Repository URL */}
           <Card className="border-2 shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary font-bold">
                   2
                 </div>
-                Select Repository
+                Enter Repository URL
               </CardTitle>
               <CardDescription>
-                Choose the GitHub repository to submit
+                Enter your GitHub repository URL for verification and submission
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {loadingRepos ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <p className="ml-2 text-muted-foreground">Loading repos...</p>
-                </div>
-              ) : repos.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No repositories found. Please login with GitHub.
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="repoUrl">GitHub Repository URL</Label>
+                <Input
+                  id="repoUrl"
+                  type="url"
+                  placeholder="https://github.com/username/repository"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  disabled={isSubmitted}
+                  className="font-mono"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Enter the full GitHub URL of your repository. We&apos;ll
+                  verify you own it.
                 </p>
+              </div>
+
+              {!selectedRepo ? (
+                <Button
+                  onClick={validateAndVerifyRepo}
+                  disabled={
+                    verifyingOwnership || isSubmitted || !repoUrl.trim()
+                  }
+                  className="w-full"
+                  size="lg"
+                >
+                  {verifyingOwnership ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Verifying Ownership...
+                    </>
+                  ) : (
+                    <>
+                      <Github className="mr-2 h-5 w-5" />
+                      Verify Repository Ownership
+                    </>
+                  )}
+                </Button>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {repos.map((repo) => (
-                    <button
-                      key={repo.id}
-                      onClick={() => setSelectedRepo(repo)}
-                      disabled={isSubmitted}
-                      className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                        selectedRepo?.id === repo.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50"
-                      } ${
-                        isSubmitted
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-bold">{repo.name}</h3>
-                          {repo.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {repo.description}
-                            </p>
-                          )}
-                          {repo.language && (
-                            <span className="inline-block mt-1 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded">
-                              {repo.language}
+                <div className="space-y-3">
+                  <div className="bg-success/10 border border-success/30 p-4 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="h-5 w-5 text-success" />
+                          <span className="font-semibold text-success">
+                            Repository Verified!
+                          </span>
+                        </div>
+                        <h3 className="font-bold">{selectedRepo.name}</h3>
+                        {selectedRepo.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {selectedRepo.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                          <span>Owner: {selectedRepo.owner.login}</span>
+                          {selectedRepo.language && (
+                            <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs">
+                              {selectedRepo.language}
                             </span>
                           )}
                         </div>
-                        <ExternalLink
-                          className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(repo.html_url, "_blank");
-                          }}
-                        />
                       </div>
-                    </button>
-                  ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          window.open(selectedRepo.html_url, "_blank")
+                        }
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setSelectedRepo(null);
+                      setRepoUrl("");
+                      setAnalysisReport(null);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                    disabled={isSubmitted}
+                  >
+                    Change Repository
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -588,7 +688,9 @@ export default function SubmissionPage() {
                       Analysis Complete!
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Trust Score:</span>
+                      <span className="text-muted-foreground">
+                        Trust Score:
+                      </span>
                       <span className="text-3xl font-bold text-success">
                         {analysisReport.aiScore}/100
                       </span>
@@ -599,7 +701,11 @@ export default function SubmissionPage() {
                       Analysis Report:
                     </p>
                     <pre className="text-xs whitespace-pre-wrap">
-                      {JSON.stringify(analysisReport.report.ai_summary, null, 2)}
+                      {JSON.stringify(
+                        analysisReport.report.ai_summary,
+                        null,
+                        2
+                      )}
                     </pre>
                   </div>
                 </div>
