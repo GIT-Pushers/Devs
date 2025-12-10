@@ -1174,7 +1174,7 @@ export default function HackathonDetailPage() {
                                 toast.success(
                                   `Successfully staked ${formatEther(
                                     hackathon.stakeAmount
-                                  )} ETH!`
+                                  )} ETH! Voting tokens have been minted to all team members.`
                                 );
                                 setIsStakeDialogOpen(false);
                                 setSelectedTeamId(null);
@@ -1236,6 +1236,34 @@ export default function HackathonDetailPage() {
                   <Upload className="mr-2 h-5 w-5" />
                   Submit Project
                 </Button>
+
+                {/* Voting Button - Show after hackathon ends */}
+                {hackathon.hackEnd < BigInt(Math.floor(Date.now() / 1000)) && (
+                  <Button
+                    onClick={() =>
+                      router.push(`/voting/${hackathon.id.toString()}`)
+                    }
+                    variant="outline"
+                    className="w-full border-2 border-success/30 hover:border-success/50 hover:bg-success/10 font-bold py-6 text-base cursor-pointer"
+                  >
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Vote for Projects
+                  </Button>
+                )}
+
+                {/* Results Button - Show after finalization */}
+                {hackathon.finalized && (
+                  <Button
+                    onClick={() =>
+                      router.push(`/results/${hackathon.id.toString()}`)
+                    }
+                    variant="outline"
+                    className="w-full border-2 border-warning/30 hover:border-warning/50 hover:bg-warning/10 font-bold py-6 text-base cursor-pointer"
+                  >
+                    <Award className="mr-2 h-5 w-5" />
+                    View Results & Rankings
+                  </Button>
+                )}
 
                 {/* Judge Score Dialog */}
                 {isJudge &&
