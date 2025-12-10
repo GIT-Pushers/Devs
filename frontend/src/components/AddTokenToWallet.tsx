@@ -21,13 +21,13 @@ export function AddTokenToWallet({
   const [copied, setCopied] = useState(false);
 
   const addTokenToMetaMask = async () => {
-    if (!window.ethereum) {
+    if (typeof window.ethereum === 'undefined') {
       toast.error("MetaMask is not installed");
       return;
     }
 
     try {
-      // @ts-ignore
+      // @ts-expect-error - ethereum is injected by MetaMask
       const wasAdded = await window.ethereum.request({
         method: "wallet_watchAsset",
         params: {

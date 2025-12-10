@@ -27,12 +27,12 @@ interface Hackathon {
   minTeams: number;
   maxTeams: number;
   creationFee: bigint;
+  creationFeeRefunded: boolean;
   judges: string[];
   metadataURI: string;
   totalSponsorshipAmount: bigint;
   minSponsorshipThreshold: bigint;
   finalized: boolean;
-  creationFeeRefunded: boolean;
 }
 
 interface Team {
@@ -89,7 +89,7 @@ export default function ResultsPage() {
         const hackathonData = (await readContract({
           contract: mainContract,
           method:
-            "function getHackathon(uint256 id) view returns ((uint256 id, address organizer, uint256 sponsorshipStart, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 creationFee, address[] judges, string metadataURI, uint256 totalSponsorshipAmount, uint256 minSponsorshipThreshold, bool finalized, bool creationFeeRefunded))",
+            "function getHackathon(uint256 id) view returns ((uint256 id, address organizer, uint256 sponsorshipStart, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 creationFee, bool creationFeeRefunded, address[] judges, string metadataURI, uint256 totalSponsorshipAmount, uint256 minSponsorshipThreshold, bool finalized))",
           params: [BigInt(hackathonId)],
         })) as Hackathon;
 

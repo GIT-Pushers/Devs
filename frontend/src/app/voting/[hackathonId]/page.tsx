@@ -32,12 +32,12 @@ interface Hackathon {
   minTeams: number;
   maxTeams: number;
   creationFee: bigint;
+  creationFeeRefunded: boolean;
   judges: string[];
   metadataURI: string;
   totalSponsorshipAmount: bigint;
   minSponsorshipThreshold: bigint;
   finalized: boolean;
-  creationFeeRefunded: boolean;
 }
 
 interface Team {
@@ -98,7 +98,7 @@ export default function VotingPage() {
         const hackathonData = (await readContract({
           contract: mainContract,
           method:
-            "function getHackathon(uint256 id) view returns ((uint256 id, address organizer, uint256 sponsorshipStart, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 creationFee, address[] judges, string metadataURI, uint256 totalSponsorshipAmount, uint256 minSponsorshipThreshold, bool finalized, bool creationFeeRefunded))",
+            "function getHackathon(uint256 id) view returns ((uint256 id, address organizer, uint256 sponsorshipStart, uint256 sponsorshipEnd, uint256 hackStart, uint256 hackEnd, uint256 stakeAmount, uint32 minTeams, uint32 maxTeams, uint256 creationFee, bool creationFeeRefunded, address[] judges, string metadataURI, uint256 totalSponsorshipAmount, uint256 minSponsorshipThreshold, bool finalized))",
           params: [BigInt(hackathonId)],
         })) as Hackathon;
 
@@ -112,9 +112,9 @@ export default function VotingPage() {
         })) as string;
 
         setVotingTokenAddress(tokenAddr);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching hackathon:", error);
-        toast.error("Failed to load hackathon details");
+        toast.error(error?.message || "Failed to load hackathon details");
       } finally {
         setLoading(false);
       }
@@ -143,8 +143,9 @@ export default function VotingPage() {
         })) as bigint;
 
         setTokenBalance(balance);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching token balance:", error);
+        // Don't show error toast for balance fetch, just log it
       } finally {
         setLoadingBalance(false);
       }
@@ -179,8 +180,9 @@ export default function VotingPage() {
             break;
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching user team:", error);
+        // Don't show error for this, it's optional
       }
     };
 
@@ -255,8 +257,9 @@ export default function VotingPage() {
           registration: TeamRegistration;
         })[];
         setSubmittedTeams(validTeams);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching submitted teams:", error);
+        // Don't show error toast, page will show "no submissions" message
       }
     };
 
