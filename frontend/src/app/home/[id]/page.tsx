@@ -96,10 +96,14 @@ export default function HackathonDetailPage() {
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userTeams, setUserTeams] = useState<(Team & { metadata?: TeamMetadata })[]>([]);
+  const [userTeams, setUserTeams] = useState<
+    (Team & { metadata?: TeamMetadata })[]
+  >([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [registrationStatus, setRegistrationStatus] = useState<Map<string, TeamRegistration>>(new Map());
+  const [registrationStatus, setRegistrationStatus] = useState<
+    Map<string, TeamRegistration>
+  >(new Map());
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isStakeDialogOpen, setIsStakeDialogOpen] = useState(false);
 
@@ -166,7 +170,8 @@ export default function HackathonDetailPage() {
         // Get user's team IDs
         const teamIds = (await readContract({
           contract: mainContract,
-          method: "function getUserTeams(address user) view returns (uint256[])",
+          method:
+            "function getUserTeams(address user) view returns (uint256[])",
           params: [account.address],
         })) as bigint[];
 
@@ -215,7 +220,10 @@ export default function HackathonDetailPage() {
                     metadata = await response.json();
                   }
                 } catch (metaError) {
-                  console.error(`Failed to fetch metadata for team ${teamId}:`, metaError);
+                  console.error(
+                    `Failed to fetch metadata for team ${teamId}:`,
+                    metaError
+                  );
                 }
               }
 
@@ -230,7 +238,9 @@ export default function HackathonDetailPage() {
           })
         );
 
-        const validTeams = teamsData.filter((team) => team !== null) as (Team & {
+        const validTeams = teamsData.filter(
+          (team) => team !== null
+        ) as (Team & {
           metadata?: TeamMetadata;
         })[];
         setUserTeams(validTeams);
@@ -689,7 +699,10 @@ export default function HackathonDetailPage() {
                 </Button>
 
                 {/* Register Team Dialog */}
-                <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+                <Dialog
+                  open={isRegisterDialogOpen}
+                  onOpenChange={setIsRegisterDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
@@ -702,9 +715,12 @@ export default function HackathonDetailPage() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl">Register Team for Hackathon</DialogTitle>
+                      <DialogTitle className="text-2xl">
+                        Register Team for Hackathon
+                      </DialogTitle>
                       <DialogDescription>
-                        Select a team to register for this hackathon. Registration is required before staking.
+                        Select a team to register for this hackathon.
+                        Registration is required before staking.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
@@ -716,98 +732,129 @@ export default function HackathonDetailPage() {
                       {account?.address && loadingTeams && (
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          <p className="ml-3 text-muted-foreground">Loading your teams...</p>
+                          <p className="ml-3 text-muted-foreground">
+                            Loading your teams...
+                          </p>
                         </div>
                       )}
-                      {account?.address && !loadingTeams && userTeams.length === 0 && (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground mb-4">You don't have any teams yet</p>
-                          <Button onClick={() => router.push("/CreateTeam")}>Create Team</Button>
-                        </div>
-                      )}
-                      {account?.address && !loadingTeams && userTeams.length > 0 && (
-                        <div className="space-y-3">
-                          {userTeams.map((team) => {
-                            const regStatus = registrationStatus.get(team.id.toString());
-                            const isRegistered = regStatus?.registered || false;
-                            return (
-                              <Card
-                                key={team.id.toString()}
-                                className={`cursor-pointer transition-all ${
-                                  selectedTeamId === team.id.toString()
-                                    ? "border-2 border-primary bg-primary/5"
-                                    : "border hover:border-primary/50"
-                                } ${isRegistered ? "opacity-50" : ""}`}
-                                onClick={() => !isRegistered && setSelectedTeamId(team.id.toString())}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <h3 className="font-bold text-lg mb-1">
-                                        {team.metadata?.name || `Team #${team.id.toString()}`}
-                                      </h3>
-                                      {team.metadata?.description && (
-                                        <p className="text-sm text-muted-foreground mb-2">
-                                          {team.metadata.description}
+                      {account?.address &&
+                        !loadingTeams &&
+                        userTeams.length === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-muted-foreground mb-4">
+                              You don&apos;t have any teams yet
+                            </p>
+                            <Button onClick={() => router.push("/CreateTeam")}>
+                              Create Team
+                            </Button>
+                          </div>
+                        )}
+                      {account?.address &&
+                        !loadingTeams &&
+                        userTeams.length > 0 && (
+                          <div className="space-y-3">
+                            {userTeams.map((team) => {
+                              const regStatus = registrationStatus.get(
+                                team.id.toString()
+                              );
+                              const isRegistered =
+                                regStatus?.registered || false;
+                              return (
+                                <Card
+                                  key={team.id.toString()}
+                                  className={`cursor-pointer transition-all ${
+                                    selectedTeamId === team.id.toString()
+                                      ? "border-2 border-primary bg-primary/5"
+                                      : "border hover:border-primary/50"
+                                  } ${isRegistered ? "opacity-50" : ""}`}
+                                  onClick={() =>
+                                    !isRegistered &&
+                                    setSelectedTeamId(team.id.toString())
+                                  }
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <h3 className="font-bold text-lg mb-1">
+                                          {team.metadata?.name ||
+                                            `Team #${team.id.toString()}`}
+                                        </h3>
+                                        {team.metadata?.description && (
+                                          <p className="text-sm text-muted-foreground mb-2">
+                                            {team.metadata.description}
+                                          </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                          {team.members.length} member
+                                          {team.members.length !== 1 ? "s" : ""}
                                         </p>
-                                      )}
-                                      <p className="text-xs text-muted-foreground">
-                                        {team.members.length} member{team.members.length !== 1 ? "s" : ""}
-                                      </p>
-                                      {isRegistered && (
-                                        <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
-                                          <CheckCircle className="h-3 w-3" />
-                                          Already Registered
-                                        </div>
+                                        {isRegistered && (
+                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                            <CheckCircle className="h-3 w-3" />
+                                            Already Registered
+                                          </div>
+                                        )}
+                                      </div>
+                                      {team.metadata?.image && (
+                                        <img
+                                          src={team.metadata.image.replace(
+                                            "ipfs://",
+                                            "https://gateway.pinata.cloud/ipfs/"
+                                          )}
+                                          alt={team.metadata.name || "Team"}
+                                          className="w-16 h-16 rounded-lg object-cover border"
+                                        />
                                       )}
                                     </div>
-                                    {team.metadata?.image && (
-                                      <img
-                                        src={team.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")}
-                                        alt={team.metadata.name || "Team"}
-                                        className="w-16 h-16 rounded-lg object-cover border"
-                                      />
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {selectedTeamId && !registrationStatus.get(selectedTeamId)?.registered && (
-                        <div className="pt-4 border-t">
-                          <TransactionButton
-                            transaction={() => {
-                              return prepareContractCall({
-                                contract: mainContract,
-                                method: "function registerTeam(uint256 hackathonId, uint256 teamId)",
-                                params: [BigInt(hackathonId), BigInt(selectedTeamId)],
-                              });
-                            }}
-                            onTransactionConfirmed={() => {
-                              toast.success("Team registered successfully!");
-                              setIsRegisterDialogOpen(false);
-                              setSelectedTeamId(null);
-                              // Refresh the page to update status
-                              window.location.reload();
-                            }}
-                            onError={(error) => {
-                              console.error("Registration error:", error);
-                              toast.error(`Registration failed: ${error.message}`);
-                            }}
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6"
-                          >
-                            Register Team #{selectedTeamId}
-                          </TransactionButton>
-                        </div>
-                      )}
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
+                      {selectedTeamId &&
+                        !registrationStatus.get(selectedTeamId)?.registered && (
+                          <div className="pt-4 border-t">
+                            <TransactionButton
+                              transaction={() => {
+                                return prepareContractCall({
+                                  contract: mainContract,
+                                  method:
+                                    "function registerTeam(uint256 hackathonId, uint256 teamId)",
+                                  params: [
+                                    BigInt(hackathonId),
+                                    BigInt(selectedTeamId),
+                                  ],
+                                });
+                              }}
+                              onTransactionConfirmed={() => {
+                                toast.success("Team registered successfully!");
+                                setIsRegisterDialogOpen(false);
+                                setSelectedTeamId(null);
+                                // Refresh the page to update status
+                                window.location.reload();
+                              }}
+                              onError={(error) => {
+                                console.error("Registration error:", error);
+                                toast.error(
+                                  `Registration failed: ${error.message}`
+                                );
+                              }}
+                              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6"
+                            >
+                              Register Team #{selectedTeamId}
+                            </TransactionButton>
+                          </div>
+                        )}
                     </div>
                   </DialogContent>
                 </Dialog>
 
                 {/* Stake for Team Dialog */}
-                <Dialog open={isStakeDialogOpen} onOpenChange={setIsStakeDialogOpen}>
+                <Dialog
+                  open={isStakeDialogOpen}
+                  onOpenChange={setIsStakeDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
@@ -820,9 +867,12 @@ export default function HackathonDetailPage() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl">Stake for Team</DialogTitle>
+                      <DialogTitle className="text-2xl">
+                        Stake for Team
+                      </DialogTitle>
                       <DialogDescription>
-                        Select a registered team to stake {formatEther(hackathon.stakeAmount)} ETH
+                        Select a registered team to stake{" "}
+                        {formatEther(hackathon.stakeAmount)} ETH
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
@@ -834,113 +884,149 @@ export default function HackathonDetailPage() {
                       {account?.address && loadingTeams && (
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          <p className="ml-3 text-muted-foreground">Loading your teams...</p>
+                          <p className="ml-3 text-muted-foreground">
+                            Loading your teams...
+                          </p>
                         </div>
                       )}
-                      {account?.address && !loadingTeams && userTeams.length === 0 && (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground mb-4">You don&apos;t have any teams yet</p>
-                          <Button onClick={() => router.push("/CreateTeam")}>Create Team</Button>
-                        </div>
-                      )}
-                      {account?.address && !loadingTeams && userTeams.length > 0 && (
-                        <>
-                          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                            <p className="text-sm font-semibold mb-2">Stake Amount Required:</p>
-                            <p className="text-3xl font-bold text-yellow-400">
-                              {formatEther(hackathon.stakeAmount)} ETH
+                      {account?.address &&
+                        !loadingTeams &&
+                        userTeams.length === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-muted-foreground mb-4">
+                              You don&apos;t have any teams yet
                             </p>
+                            <Button onClick={() => router.push("/CreateTeam")}>
+                              Create Team
+                            </Button>
                           </div>
-                          <div className="space-y-3">
-                            {userTeams.map((team) => {
-                              const regStatus = registrationStatus.get(team.id.toString());
-                              const isRegistered = regStatus?.registered || false;
-                              const isStaked = regStatus?.staked || false;
-                              const canStake = isRegistered && !isStaked;
-                              return (
-                                <Card
-                                  key={team.id.toString()}
-                                  className={`cursor-pointer transition-all ${
-                                    selectedTeamId === team.id.toString()
-                                      ? "border-2 border-primary bg-primary/5"
-                                      : "border hover:border-primary/50"
-                                  } ${!canStake ? "opacity-50" : ""}`}
-                                  onClick={() => canStake && setSelectedTeamId(team.id.toString())}
-                                >
-                                  <CardContent className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div className="flex-1">
-                                        <h3 className="font-bold text-lg mb-1">
-                                          {team.metadata?.name || `Team #${team.id.toString()}`}
-                                        </h3>
-                                        {team.metadata?.description && (
-                                          <p className="text-sm text-muted-foreground mb-2">
-                                            {team.metadata.description}
+                        )}
+                      {account?.address &&
+                        !loadingTeams &&
+                        userTeams.length > 0 && (
+                          <>
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                              <p className="text-sm font-semibold mb-2">
+                                Stake Amount Required:
+                              </p>
+                              <p className="text-3xl font-bold text-yellow-400">
+                                {formatEther(hackathon.stakeAmount)} ETH
+                              </p>
+                            </div>
+                            <div className="space-y-3">
+                              {userTeams.map((team) => {
+                                const regStatus = registrationStatus.get(
+                                  team.id.toString()
+                                );
+                                const isRegistered =
+                                  regStatus?.registered || false;
+                                const isStaked = regStatus?.staked || false;
+                                const canStake = isRegistered && !isStaked;
+                                return (
+                                  <Card
+                                    key={team.id.toString()}
+                                    className={`cursor-pointer transition-all ${
+                                      selectedTeamId === team.id.toString()
+                                        ? "border-2 border-primary bg-primary/5"
+                                        : "border hover:border-primary/50"
+                                    } ${!canStake ? "opacity-50" : ""}`}
+                                    onClick={() =>
+                                      canStake &&
+                                      setSelectedTeamId(team.id.toString())
+                                    }
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                          <h3 className="font-bold text-lg mb-1">
+                                            {team.metadata?.name ||
+                                              `Team #${team.id.toString()}`}
+                                          </h3>
+                                          {team.metadata?.description && (
+                                            <p className="text-sm text-muted-foreground mb-2">
+                                              {team.metadata.description}
+                                            </p>
+                                          )}
+                                          <p className="text-xs text-muted-foreground">
+                                            {team.members.length} member
+                                            {team.members.length !== 1
+                                              ? "s"
+                                              : ""}
                                           </p>
-                                        )}
-                                        <p className="text-xs text-muted-foreground">
-                                          {team.members.length} member{team.members.length !== 1 ? "s" : ""}
-                                        </p>
-                                        {!isRegistered && (
-                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
-                                            Not Registered
-                                          </div>
-                                        )}
-                                        {isStaked && (
-                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
-                                            <Lock className="h-3 w-3" />
-                                            Already Staked
-                                          </div>
-                                        )}
-                                        {isRegistered && !isStaked && (
-                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-semibold">
-                                            Ready to Stake
-                                          </div>
+                                          {!isRegistered && (
+                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                                              Not Registered
+                                            </div>
+                                          )}
+                                          {isStaked && (
+                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                              <Lock className="h-3 w-3" />
+                                              Already Staked
+                                            </div>
+                                          )}
+                                          {isRegistered && !isStaked && (
+                                            <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-semibold">
+                                              Ready to Stake
+                                            </div>
+                                          )}
+                                        </div>
+                                        {team.metadata?.image && (
+                                          <img
+                                            src={team.metadata.image.replace(
+                                              "ipfs://",
+                                              "https://gateway.pinata.cloud/ipfs/"
+                                            )}
+                                            alt={team.metadata.name || "Team"}
+                                            className="w-16 h-16 rounded-lg object-cover border"
+                                          />
                                         )}
                                       </div>
-                                      {team.metadata?.image && (
-                                        <img
-                                          src={team.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")}
-                                          alt={team.metadata.name || "Team"}
-                                          className="w-16 h-16 rounded-lg object-cover border"
-                                        />
-                                      )}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              );
-                            })}
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      {selectedTeamId &&
+                        registrationStatus.get(selectedTeamId)?.registered &&
+                        !registrationStatus.get(selectedTeamId)?.staked && (
+                          <div className="pt-4 border-t">
+                            <TransactionButton
+                              transaction={() => {
+                                return prepareContractCall({
+                                  contract: mainContract,
+                                  method:
+                                    "function stakeForTeam(uint256 hackathonId, uint256 teamId) payable",
+                                  params: [
+                                    BigInt(hackathonId),
+                                    BigInt(selectedTeamId),
+                                  ],
+                                  value: hackathon.stakeAmount,
+                                });
+                              }}
+                              onTransactionConfirmed={() => {
+                                toast.success(
+                                  `Successfully staked ${formatEther(
+                                    hackathon.stakeAmount
+                                  )} ETH!`
+                                );
+                                setIsStakeDialogOpen(false);
+                                setSelectedTeamId(null);
+                                // Refresh the page to update status
+                                window.location.reload();
+                              }}
+                              onError={(error) => {
+                                console.error("Staking error:", error);
+                                toast.error(`Staking failed: ${error.message}`);
+                              }}
+                              className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-6"
+                            >
+                              Stake {formatEther(hackathon.stakeAmount)} ETH for
+                              Team #{selectedTeamId}
+                            </TransactionButton>
                           </div>
-                        </>
-                      )}
-                      {selectedTeamId && registrationStatus.get(selectedTeamId)?.registered && !registrationStatus.get(selectedTeamId)?.staked && (
-                        <div className="pt-4 border-t">
-                          <TransactionButton
-                            transaction={() => {
-                              return prepareContractCall({
-                                contract: mainContract,
-                                method: "function stakeForTeam(uint256 hackathonId, uint256 teamId) payable",
-                                params: [BigInt(hackathonId), BigInt(selectedTeamId)],
-                                value: hackathon.stakeAmount,
-                              });
-                            }}
-                            onTransactionConfirmed={() => {
-                              toast.success(`Successfully staked ${formatEther(hackathon.stakeAmount)} ETH!`);
-                              setIsStakeDialogOpen(false);
-                              setSelectedTeamId(null);
-                              // Refresh the page to update status
-                              window.location.reload();
-                            }}
-                            onError={(error) => {
-                              console.error("Staking error:", error);
-                              toast.error(`Staking failed: ${error.message}`);
-                            }}
-                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-6"
-                          >
-                            Stake {formatEther(hackathon.stakeAmount)} ETH for Team #{selectedTeamId}
-                          </TransactionButton>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -966,6 +1052,9 @@ export default function HackathonDetailPage() {
                   View Sponsors
                 </Button>
                 <Button
+                  onClick={() =>
+                    router.push(`/participants/${hackathon.id.toString()}`)
+                  }
                   variant="outline"
                   className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
                 >

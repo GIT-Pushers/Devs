@@ -50,7 +50,8 @@ export default function MyTeamsPage() {
         // Get user's team IDs
         const teamIds = (await readContract({
           contract: mainContract,
-          method: "function getUserTeams(address user) view returns (uint256[])",
+          method:
+            "function getUserTeams(address user) view returns (uint256[])",
           params: [account.address],
         })) as bigint[];
 
@@ -114,9 +115,7 @@ export default function MyTeamsPage() {
         setTeams(validTeams);
       } catch (err) {
         console.error("Error fetching teams:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load teams"
-        );
+        setError(err instanceof Error ? err.message : "Failed to load teams");
       } finally {
         setLoading(false);
       }
@@ -129,7 +128,11 @@ export default function MyTeamsPage() {
     return (
       <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
         <div className="container mx-auto max-w-4xl py-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -167,7 +170,9 @@ export default function MyTeamsPage() {
             <CardContent className="py-12">
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="ml-3 text-muted-foreground">Loading your teams...</p>
+                <p className="ml-3 text-muted-foreground">
+                  Loading your teams...
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -250,7 +255,8 @@ export default function MyTeamsPage() {
                         Members
                       </label>
                       <p className="font-semibold">
-                        {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+                        {team.members.length} member
+                        {team.members.length !== 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
