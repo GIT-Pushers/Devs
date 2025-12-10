@@ -1,4 +1,4 @@
-# GLYTCH - Decentralized Hackathon Platform
+# HACKX - Decentralized Hackathon Platform
 
 <div align="center">
 
