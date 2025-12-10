@@ -3,12 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { readContract } from "thirdweb";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
   Users,
@@ -80,11 +75,14 @@ export default function ParticipantsPage() {
         // Get all team IDs registered for this hackathon
         const teamIds = (await readContract({
           contract: mainContract,
-          method: "function getHackathonTeams(uint256) view returns (uint256[])",
+          method:
+            "function getHackathonTeams(uint256) view returns (uint256[])",
           params: [BigInt(hackathonId)],
         })) as bigint[];
 
-        console.log(`Found ${teamIds.length} teams for hackathon ${hackathonId}`);
+        console.log(
+          `Found ${teamIds.length} teams for hackathon ${hackathonId}`
+        );
 
         if (teamIds.length === 0) {
           setParticipants([]);
@@ -150,9 +148,15 @@ export default function ParticipantsPage() {
 
         // Calculate statistics
         const totalTeams = validTeams.length;
-        const registeredTeams = validTeams.filter((t) => t.registration.registered).length;
-        const stakedTeams = validTeams.filter((t) => t.registration.staked).length;
-        const submittedTeams = validTeams.filter((t) => t.registration.projectSubmitted).length;
+        const registeredTeams = validTeams.filter(
+          (t) => t.registration.registered
+        ).length;
+        const stakedTeams = validTeams.filter(
+          (t) => t.registration.staked
+        ).length;
+        const submittedTeams = validTeams.filter(
+          (t) => t.registration.projectSubmitted
+        ).length;
 
         setStats({
           total: totalTeams,
@@ -181,7 +185,11 @@ export default function ParticipantsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
         <div className="container mx-auto max-w-7xl py-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -202,7 +210,11 @@ export default function ParticipantsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
         <div className="container mx-auto max-w-7xl py-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -379,13 +391,18 @@ export default function ParticipantsPage() {
                   {/* Team Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Team ID</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Team ID
+                      </p>
                       <p className="font-mono text-sm">#{team.id.toString()}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Members</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Members
+                      </p>
                       <p className="font-semibold">
-                        {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+                        {team.members.length} member
+                        {team.members.length !== 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
@@ -393,7 +410,9 @@ export default function ParticipantsPage() {
                   {/* Skills/Tags */}
                   {team.metadata?.tags && team.metadata.tags.length > 0 && (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Skills</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Skills
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {team.metadata.tags.map((tag, idx) => (
                           <span
@@ -409,7 +428,9 @@ export default function ParticipantsPage() {
 
                   {/* Creator */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Created by</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Created by
+                    </p>
                     <p className="font-mono text-xs break-all bg-muted p-2 rounded">
                       {team.creator}
                     </p>
@@ -417,10 +438,14 @@ export default function ParticipantsPage() {
 
                   {/* Staker (if different from creator) */}
                   {team.registration.staked &&
-                    team.registration.staker !== "0x0000000000000000000000000000000000000000" &&
-                    team.registration.staker.toLowerCase() !== team.creator.toLowerCase() && (
+                    team.registration.staker !==
+                      "0x0000000000000000000000000000000000000000" &&
+                    team.registration.staker.toLowerCase() !==
+                      team.creator.toLowerCase() && (
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Staked by</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Staked by
+                        </p>
                         <p className="font-mono text-xs break-all bg-muted p-2 rounded">
                           {team.registration.staker}
                         </p>
@@ -429,7 +454,9 @@ export default function ParticipantsPage() {
 
                   {/* Members List */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Team Members</p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Team Members
+                    </p>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {team.members.map((member, idx) => (
                         <div
@@ -447,7 +474,9 @@ export default function ParticipantsPage() {
                     Number(team.registration.judgeScore) > 0 ||
                     Number(team.registration.participantScore) > 0) && (
                     <div className="pt-4 border-t">
-                      <p className="text-xs text-muted-foreground mb-2">Scores</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Scores
+                      </p>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="bg-purple-500/10 p-2 rounded">
                           <p className="text-xs text-muted-foreground">AI</p>
@@ -462,7 +491,9 @@ export default function ParticipantsPage() {
                           </p>
                         </div>
                         <div className="bg-green-500/10 p-2 rounded">
-                          <p className="text-xs text-muted-foreground">Participant</p>
+                          <p className="text-xs text-muted-foreground">
+                            Participant
+                          </p>
                           <p className="font-bold text-green-400">
                             {Number(team.registration.participantScore)}
                           </p>
@@ -470,7 +501,9 @@ export default function ParticipantsPage() {
                       </div>
                       {team.registration.scoreFinalized && (
                         <div className="mt-2 text-center">
-                          <p className="text-xs text-muted-foreground">Final Score</p>
+                          <p className="text-xs text-muted-foreground">
+                            Final Score
+                          </p>
                           <p className="text-2xl font-bold text-primary">
                             {Number(team.registration.finalScore)}
                           </p>

@@ -33,6 +33,9 @@ import {
   Key,
   CheckCircle,
   Lock,
+  Upload,
+  DollarSign,
+  Gavel,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mainContract } from "@/constants/contracts";
@@ -106,6 +109,14 @@ export default function HackathonDetailPage() {
   >(new Map());
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isStakeDialogOpen, setIsStakeDialogOpen] = useState(false);
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
+  const [isJudgeScoreDialogOpen, setIsJudgeScoreDialogOpen] = useState(false);
+  const [isJudge, setIsJudge] = useState(false);
+  const [submittedTeams, setSubmittedTeams] = useState<
+    (Team & { metadata?: TeamMetadata; registration: TeamRegistration })[]
+  >([]);
+  const [loadingSubmittedTeams, setLoadingSubmittedTeams] = useState(false);
+  const [selectedScore, setSelectedScore] = useState<number>(0);
 
   useEffect(() => {
     const fetchHackathonDetails = async () => {
@@ -255,6 +266,114 @@ export default function HackathonDetailPage() {
       fetchUserTeams();
     }
   }, [hackathonId, account?.address]);
+
+  // Fetch submitted teams for judging
+  useEffect(() => {
+    const fetchSubmittedTeams = async () => {
+      if (!account?.address || !hackathon || !isJudge) return;
+
+      // Only fetch after hackathon ends
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      if (now <= hackathon.hackEnd) return;
+
+      try {
+        setLoadingSubmittedTeams(true);
+
+        // Get all hackathon teams
+        const teamIds = (await readContract({
+          contract: mainContract,
+          method:
+            "function getHackathonTeams(uint256 hackathonId) view returns (uint256[])",
+          params: [BigInt(hackathonId)],
+        })) as bigint[];
+
+        if (teamIds.length === 0) {
+          setSubmittedTeams([]);
+          return;
+        }
+
+        // Fetch teams with submitted projects
+        const teamsData = await Promise.all(
+          teamIds.map(async (teamId) => {
+            try {
+              const team = (await readContract({
+                contract: mainContract,
+                method:
+                  "function getTeam(uint256 id) view returns ((uint256 id, address creator, string metadataURI, address[] members, bytes32 joinCodeHash, bool exists))",
+                params: [teamId],
+              })) as Team;
+
+              const registration = (await readContract({
+                contract: mainContract,
+                method:
+                  "function getTeamRegistration(uint256 hackathonId, uint256 teamId) view returns ((bool registered, bool staked, address staker, bool tokensMinted, bool projectSubmitted, bytes32 repoHash, uint256 aiScore, uint256 judgeScore, uint256 participantScore, uint256 finalScore, uint256 ranking, bool scoreFinalized))",
+                params: [BigInt(hackathonId), teamId],
+              })) as TeamRegistration;
+
+              // Only include teams that submitted projects
+              if (!registration.projectSubmitted) return null;
+
+              // Fetch metadata
+              let metadata: TeamMetadata | undefined;
+              if (team.metadataURI) {
+                try {
+                  const ipfsUrl = team.metadataURI.replace(
+                    "ipfs://",
+                    "https://gateway.pinata.cloud/ipfs/"
+                  );
+                  const response = await fetch(ipfsUrl);
+                  if (response.ok) {
+                    metadata = await response.json();
+                  }
+                } catch (err) {
+                  console.error("Failed to fetch team metadata:", err);
+                }
+              }
+
+              return { ...team, metadata, registration };
+            } catch (err) {
+              console.error(`Error fetching team ${teamId}:`, err);
+              return null;
+            }
+          })
+        );
+
+        const validTeams = teamsData.filter((t) => t !== null) as (Team & {
+          metadata?: TeamMetadata;
+          registration: TeamRegistration;
+        })[];
+        setSubmittedTeams(validTeams);
+      } catch (error) {
+        console.error("Error fetching submitted teams:", error);
+      } finally {
+        setLoadingSubmittedTeams(false);
+      }
+    };
+
+    fetchSubmittedTeams();
+  }, [hackathonId, account?.address, hackathon, isJudge]);
+
+  // Check if connected wallet is a judge
+  useEffect(() => {
+    const checkJudgeStatus = async () => {
+      if (!account?.address || !hackathon) return;
+
+      try {
+        const judgeStatus = (await readContract({
+          contract: mainContract,
+          method:
+            "function isJudge(uint256 hackathonId, address judge) view returns (bool)",
+          params: [BigInt(hackathonId), account.address],
+        })) as boolean;
+
+        setIsJudge(judgeStatus);
+      } catch (error) {
+        console.error("Error checking judge status:", error);
+      }
+    };
+
+    checkJudgeStatus();
+  }, [hackathonId, account?.address, hackathon]);
 
   const formatDate = (timestamp: bigint) => {
     return new Date(Number(timestamp) * 1000).toLocaleString("en-US", {
@@ -676,6 +795,52 @@ export default function HackathonDetailPage() {
               </CardContent>
             </Card>
 
+            {/* Judges */}
+            {hackathon.judges && hackathon.judges.length > 0 && (
+              <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+                  <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+                      <Gavel className="w-6 h-6 text-primary" />
+                    </div>
+                    Judges
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Panel of judges for this hackathon
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-6">
+                  {hackathon.judges.map((judge, index) => (
+                    <div
+                      key={judge}
+                      className={`p-4 bg-black/40 border-2 rounded-xl backdrop-blur-sm transition-all ${
+                        account?.address?.toLowerCase() === judge.toLowerCase()
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-primary/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1 font-bold uppercase tracking-widest">
+                            Judge #{index + 1}
+                          </p>
+                          <code className="text-sm text-white font-mono break-all">
+                            {judge}
+                          </code>
+                        </div>
+                        {account?.address?.toLowerCase() ===
+                          judge.toLowerCase() && (
+                          <span className="ml-3 px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30">
+                            YOU
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Actions */}
             <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
@@ -1061,6 +1226,525 @@ export default function HackathonDetailPage() {
                   <Users className="mr-2 h-5 w-5" />
                   View Participants
                 </Button>
+                <Button
+                  onClick={() =>
+                    router.push(`/submission/${hackathon.id.toString()}`)
+                  }
+                  variant="outline"
+                  className="w-full border-2 border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10 font-bold py-6 text-base cursor-pointer"
+                >
+                  <Upload className="mr-2 h-5 w-5" />
+                  Submit Project
+                </Button>
+
+                {/* Judge Score Dialog */}
+                {isJudge &&
+                  hackathon.hackEnd < BigInt(Math.floor(Date.now() / 1000)) && (
+                    <Dialog
+                      open={isJudgeScoreDialogOpen}
+                      onOpenChange={setIsJudgeScoreDialogOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full border-2 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 font-bold py-6 text-base cursor-pointer"
+                          disabled={!account?.address || loadingSubmittedTeams}
+                        >
+                          <Gavel className="mr-2 h-5 w-5" />
+                          Judge Submissions
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl">
+                            Judge Submissions
+                          </DialogTitle>
+                          <DialogDescription>
+                            Score submitted projects (0-100). You can only score
+                            each team once.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-4">
+                          {!account?.address && (
+                            <p className="text-center text-muted-foreground py-8">
+                              Please connect your wallet to judge
+                            </p>
+                          )}
+                          {account?.address && loadingSubmittedTeams && (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                              <p className="ml-3 text-muted-foreground">
+                                Loading submissions...
+                              </p>
+                            </div>
+                          )}
+                          {account?.address &&
+                            !loadingSubmittedTeams &&
+                            submittedTeams.length === 0 && (
+                              <div className="text-center py-8">
+                                <p className="text-muted-foreground mb-4">
+                                  No submissions yet for this hackathon
+                                </p>
+                              </div>
+                            )}
+                          {account?.address &&
+                            !loadingSubmittedTeams &&
+                            submittedTeams.length > 0 && (
+                              <div className="space-y-3">
+                                {submittedTeams.map((team) => {
+                                  const hasScored =
+                                    team.registration.judgeScore > 0n;
+
+                                  return (
+                                    <Card
+                                      key={team.id.toString()}
+                                      className={`transition-all ${
+                                        selectedTeamId === team.id.toString()
+                                          ? "border-2 border-primary bg-primary/5"
+                                          : "border hover:border-primary/50"
+                                      }`}
+                                    >
+                                      <CardContent className="p-4">
+                                        <div className="space-y-4">
+                                          <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                              <h3 className="font-bold text-lg mb-1">
+                                                {team.metadata?.name ||
+                                                  `Team #${team.id.toString()}`}
+                                              </h3>
+                                              {team.metadata?.description && (
+                                                <p className="text-sm text-muted-foreground mb-2">
+                                                  {team.metadata.description}
+                                                </p>
+                                              )}
+                                              <div className="flex flex-wrap gap-2 mt-2">
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-semibold">
+                                                  <CheckCircle className="h-3 w-3" />
+                                                  Project Submitted
+                                                </span>
+                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-semibold">
+                                                  AI Score:{" "}
+                                                  {team.registration.aiScore.toString()}
+                                                  /100
+                                                </span>
+                                                {hasScored && (
+                                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                                    <CheckCircle className="h-3 w-3" />
+                                                    Scored
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            {team.metadata?.image && (
+                                              <img
+                                                src={team.metadata.image.replace(
+                                                  "ipfs://",
+                                                  "https://gateway.pinata.cloud/ipfs/"
+                                                )}
+                                                alt={
+                                                  team.metadata.name || "Team"
+                                                }
+                                                className="w-16 h-16 rounded-lg object-cover border"
+                                              />
+                                            )}
+                                          </div>
+
+                                          {selectedTeamId ===
+                                            team.id.toString() &&
+                                            !hasScored && (
+                                              <div className="space-y-3 pt-3 border-t">
+                                                <div>
+                                                  <label className="text-sm font-semibold mb-2 block">
+                                                    Score (0-100):
+                                                  </label>
+                                                  <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    value={selectedScore}
+                                                    onChange={(e) =>
+                                                      setSelectedScore(
+                                                        Math.min(
+                                                          100,
+                                                          Math.max(
+                                                            0,
+                                                            parseInt(
+                                                              e.target.value
+                                                            ) || 0
+                                                          )
+                                                        )
+                                                      )
+                                                    }
+                                                    className="w-full px-4 py-3 bg-black/40 border-2 border-primary/20 rounded-lg text-white font-semibold text-lg focus:outline-none focus:border-primary/50"
+                                                    placeholder="Enter score (0-100)"
+                                                  />
+                                                </div>
+                                                <TransactionButton
+                                                  transaction={() => {
+                                                    if (
+                                                      selectedScore < 0 ||
+                                                      selectedScore > 100
+                                                    ) {
+                                                      toast.error(
+                                                        "Score must be between 0 and 100"
+                                                      );
+                                                      return;
+                                                    }
+                                                    return prepareContractCall({
+                                                      contract: mainContract,
+                                                      method:
+                                                        "function submitJudgeScore(uint256 hackathonId, uint256 teamId, uint256 score)",
+                                                      params: [
+                                                        BigInt(hackathonId),
+                                                        team.id,
+                                                        BigInt(selectedScore),
+                                                      ],
+                                                    });
+                                                  }}
+                                                  onTransactionConfirmed={() => {
+                                                    toast.success(
+                                                      `Score ${selectedScore} submitted successfully!`
+                                                    );
+                                                    setSelectedTeamId(null);
+                                                    setSelectedScore(0);
+                                                    // Refresh the page to update status
+                                                    window.location.reload();
+                                                  }}
+                                                  onError={(error) => {
+                                                    console.error(
+                                                      "Scoring error:",
+                                                      error
+                                                    );
+                                                    toast.error(
+                                                      `Scoring failed: ${error.message}`
+                                                    );
+                                                  }}
+                                                  className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3"
+                                                >
+                                                  Submit Score: {selectedScore}
+                                                  /100
+                                                </TransactionButton>
+                                              </div>
+                                            )}
+
+                                          {!hasScored &&
+                                            selectedTeamId !==
+                                              team.id.toString() && (
+                                              <Button
+                                                onClick={() => {
+                                                  setSelectedTeamId(
+                                                    team.id.toString()
+                                                  );
+                                                  setSelectedScore(0);
+                                                }}
+                                                className="w-full"
+                                                variant="outline"
+                                              >
+                                                <Gavel className="mr-2 h-4 w-4" />
+                                                Score This Team
+                                              </Button>
+                                            )}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
+                              </div>
+                            )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+
+                {/* Calculate Final Scores - Anyone can call after hackathon ends */}
+                {hackathon.hackEnd < BigInt(Math.floor(Date.now() / 1000)) &&
+                  !hackathon.finalized && (
+                    <TransactionButton
+                      transaction={() => {
+                        return prepareContractCall({
+                          contract: mainContract,
+                          method:
+                            "function calculateFinalScores(uint256 hackathonId)",
+                          params: [BigInt(hackathonId)],
+                        });
+                      }}
+                      onTransactionSent={() => {
+                        toast.info("Calculating final scores...");
+                      }}
+                      onTransactionConfirmed={() => {
+                        toast.success(
+                          "Final scores calculated and rankings assigned!"
+                        );
+                        setTimeout(() => window.location.reload(), 2000);
+                      }}
+                      onError={(error) => {
+                        console.error("Calculate scores error:", error);
+                        toast.error(
+                          `Failed to calculate scores: ${error.message}`
+                        );
+                      }}
+                      className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-6 text-base border-2 border-purple-600"
+                    >
+                      <Award className="mr-2 h-5 w-5" />
+                      Calculate Final Scores & Rankings
+                    </TransactionButton>
+                  )}
+
+                {/* Distribute Rewards - Anyone can call after finalization */}
+                {hackathon.finalized && (
+                  <TransactionButton
+                    transaction={() => {
+                      return prepareContractCall({
+                        contract: mainContract,
+                        method:
+                          "function distributeRewards(uint256 hackathonId)",
+                        params: [BigInt(hackathonId)],
+                      });
+                    }}
+                    onTransactionSent={() => {
+                      toast.info("Distributing rewards...");
+                    }}
+                    onTransactionConfirmed={() => {
+                      toast.success(
+                        "Rewards distributed successfully to winning teams!"
+                      );
+                      setTimeout(() => window.location.reload(), 2000);
+                    }}
+                    onError={(error) => {
+                      console.error("Distribute rewards error:", error);
+                      toast.error(
+                        `Failed to distribute rewards: ${error.message}`
+                      );
+                    }}
+                    className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-6 text-base border-2 border-yellow-600 shadow-lg shadow-yellow-500/30"
+                  >
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Distribute Rewards to Winners
+                  </TransactionButton>
+                )}
+
+                {/* Settle Creation Fee - Organizer Only */}
+                {account?.address?.toLowerCase() ===
+                  hackathon.organizer.toLowerCase() &&
+                  hackathon.finalized &&
+                  !hackathon.creationFeeRefunded && (
+                    <TransactionButton
+                      transaction={() => {
+                        return prepareContractCall({
+                          contract: mainContract,
+                          method:
+                            "function settleCreationFee(uint256 hackathonId)",
+                          params: [BigInt(hackathonId)],
+                        });
+                      }}
+                      onTransactionSent={() => {
+                        toast.info("Settling creation fee...");
+                      }}
+                      onTransactionConfirmed={() => {
+                        toast.success(
+                          "Creation fee settled! Refund transferred if ≥100 participants."
+                        );
+                        setTimeout(() => window.location.reload(), 2000);
+                      }}
+                      onError={(error) => {
+                        console.error("Settle creation fee error:", error);
+                        toast.error(
+                          `Failed to settle creation fee: ${error.message}`
+                        );
+                      }}
+                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-6 text-base border-2 border-blue-600 shadow-lg shadow-blue-500/30"
+                    >
+                      <DollarSign className="mr-2 h-5 w-5" />
+                      Settle Creation Fee (80% Refund if ≥100 Participants)
+                    </TransactionButton>
+                  )}
+
+                {/* Refund Stake Dialog */}
+                {hackathon.finalized && (
+                  <Dialog
+                    open={isRefundDialogOpen}
+                    onOpenChange={setIsRefundDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 border-green-500/30 hover:border-green-500/50 hover:bg-green-500/10 font-bold py-6 text-base cursor-pointer"
+                        disabled={!account?.address || loadingTeams}
+                      >
+                        <DollarSign className="mr-2 h-5 w-5" />
+                        Claim Stake Refund
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl">
+                          Claim Stake Refund
+                        </DialogTitle>
+                        <DialogDescription>
+                          Hackathon is finalized. Claim your stake refund of{" "}
+                          {formatEther(hackathon.stakeAmount)} ETH
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        {!account?.address && (
+                          <p className="text-center text-muted-foreground py-8">
+                            Please connect your wallet to claim refund
+                          </p>
+                        )}
+                        {account?.address && loadingTeams && (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p className="ml-3 text-muted-foreground">
+                              Loading your teams...
+                            </p>
+                          </div>
+                        )}
+                        {account?.address &&
+                          !loadingTeams &&
+                          userTeams.length === 0 && (
+                            <div className="text-center py-8">
+                              <p className="text-muted-foreground mb-4">
+                                You don&apos;t have any teams in this hackathon
+                              </p>
+                            </div>
+                          )}
+                        {account?.address &&
+                          !loadingTeams &&
+                          userTeams.length > 0 && (
+                            <>
+                              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                                <p className="text-sm font-semibold mb-2">
+                                  Refund Amount per Team:
+                                </p>
+                                <p className="text-3xl font-bold text-green-400">
+                                  {formatEther(hackathon.stakeAmount)} ETH
+                                </p>
+                              </div>
+                              <div className="space-y-3">
+                                {userTeams.map((team) => {
+                                  const regStatus = registrationStatus.get(
+                                    team.id.toString()
+                                  );
+                                  const isStaked = regStatus?.staked || false;
+                                  const isStaker =
+                                    regStatus?.staker?.toLowerCase() ===
+                                    account.address?.toLowerCase();
+                                  const canRefund = isStaked && isStaker;
+
+                                  return (
+                                    <Card
+                                      key={team.id.toString()}
+                                      className={`cursor-pointer transition-all ${
+                                        selectedTeamId === team.id.toString()
+                                          ? "border-2 border-primary bg-primary/5"
+                                          : "border hover:border-primary/50"
+                                      } ${!canRefund ? "opacity-50" : ""}`}
+                                      onClick={() =>
+                                        canRefund &&
+                                        setSelectedTeamId(team.id.toString())
+                                      }
+                                    >
+                                      <CardContent className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                          <div className="flex-1">
+                                            <h3 className="font-bold text-lg mb-1">
+                                              {team.metadata?.name ||
+                                                `Team #${team.id.toString()}`}
+                                            </h3>
+                                            {team.metadata?.description && (
+                                              <p className="text-sm text-muted-foreground mb-2">
+                                                {team.metadata.description}
+                                              </p>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                              {team.members.length} member
+                                              {team.members.length !== 1
+                                                ? "s"
+                                                : ""}
+                                            </p>
+                                            {!isStaked && (
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                                                Not Staked
+                                              </div>
+                                            )}
+                                            {isStaked && !isStaker && (
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-semibold">
+                                                Staked by Another Member
+                                              </div>
+                                            )}
+                                            {canRefund && (
+                                              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                                <DollarSign className="h-3 w-3" />
+                                                Refund Available
+                                              </div>
+                                            )}
+                                          </div>
+                                          {team.metadata?.image && (
+                                            <img
+                                              src={team.metadata.image.replace(
+                                                "ipfs://",
+                                                "https://gateway.pinata.cloud/ipfs/"
+                                              )}
+                                              alt={team.metadata.name || "Team"}
+                                              className="w-16 h-16 rounded-lg object-cover border"
+                                            />
+                                          )}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        {selectedTeamId &&
+                          account?.address &&
+                          registrationStatus.get(selectedTeamId)?.staked &&
+                          registrationStatus
+                            .get(selectedTeamId)
+                            ?.staker?.toLowerCase() ===
+                            account.address?.toLowerCase() && (
+                            <div className="pt-4 border-t">
+                              <TransactionButton
+                                transaction={() => {
+                                  return prepareContractCall({
+                                    contract: mainContract,
+                                    method:
+                                      "function refundStake(uint256 hackathonId, uint256 teamId)",
+                                    params: [
+                                      BigInt(hackathonId),
+                                      BigInt(selectedTeamId),
+                                    ],
+                                  });
+                                }}
+                                onTransactionConfirmed={() => {
+                                  toast.success(
+                                    `Successfully refunded ${formatEther(
+                                      hackathon.stakeAmount
+                                    )} ETH!`
+                                  );
+                                  setIsRefundDialogOpen(false);
+                                  setSelectedTeamId(null);
+                                  // Refresh the page to update status
+                                  window.location.reload();
+                                }}
+                                onError={(error) => {
+                                  console.error("Refund error:", error);
+                                  toast.error(
+                                    `Refund failed: ${error.message}`
+                                  );
+                                }}
+                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-6"
+                              >
+                                Claim {formatEther(hackathon.stakeAmount)} ETH
+                                Refund for Team #{selectedTeamId}
+                              </TransactionButton>
+                            </div>
+                          )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardContent>
             </Card>
           </div>

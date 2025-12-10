@@ -22,9 +22,14 @@ async function fetchAllFiles(owner: string, repo: string, path = "") {
   for (const item of items) {
     if (item.type === "dir") {
       if (
-        ["node_modules", ".next", "dist", "build", "__pycache__", "coverage"].includes(
-          item.name.toLowerCase()
-        )
+        [
+          "node_modules",
+          ".next",
+          "dist",
+          "build",
+          "__pycache__",
+          "coverage",
+        ].includes(item.name.toLowerCase())
       )
         continue;
 
@@ -51,15 +56,48 @@ function ruleBasedDepCategory(depName: string) {
   const n = depName.toLowerCase();
 
   // Frontend
-  const frontend = ["react", "vue", "angular", "svelte", "ember", "preact", "next", "nuxt", "gatsby"];
+  const frontend = [
+    "react",
+    "vue",
+    "angular",
+    "svelte",
+    "ember",
+    "preact",
+    "next",
+    "nuxt",
+    "gatsby",
+  ];
   if (frontend.some((k) => n.includes(k))) return "frontend";
 
   // Backend / frameworks
-  const backend = ["express", "koa", "hapi", "fastify", "nestjs", "spring", "django", "flask", "fastapi", "vertx"];
+  const backend = [
+    "express",
+    "koa",
+    "hapi",
+    "fastify",
+    "nestjs",
+    "spring",
+    "django",
+    "flask",
+    "fastapi",
+    "vertx",
+  ];
   if (backend.some((k) => n.includes(k))) return "backend";
 
   // Databases / ORMs
-  const db = ["mongoose", "pg", "postgres", "sequelize", "prisma", "mysql", "redis", "mongodb", "sqlalchemy", "psycopg2", "sqlite"];
+  const db = [
+    "mongoose",
+    "pg",
+    "postgres",
+    "sequelize",
+    "prisma",
+    "mysql",
+    "redis",
+    "mongodb",
+    "sqlalchemy",
+    "psycopg2",
+    "sqlite",
+  ];
   if (db.some((k) => n.includes(k))) return "database";
 
   // Devops / infra
@@ -67,7 +105,16 @@ function ruleBasedDepCategory(depName: string) {
   if (devops.some((k) => n.includes(k))) return "devops";
 
   // AI / ML libs
-  const aiml = ["tensorflow", "torch", "scikit", "transformers", "accelerate", "keras", "sklearn", "pytorch"];
+  const aiml = [
+    "tensorflow",
+    "torch",
+    "scikit",
+    "transformers",
+    "accelerate",
+    "keras",
+    "sklearn",
+    "pytorch",
+  ];
   if (aiml.some((k) => n.includes(k))) return "ai_ml";
 
   // Mobile
@@ -75,11 +122,25 @@ function ruleBasedDepCategory(depName: string) {
   if (mobile.some((k) => n.includes(k))) return "mobile";
 
   // Blockchain
-  const blockchain = ["solidity", "ethers", "web3", "hardhat", "truffle", "brownie", "thirdweb"];
+  const blockchain = [
+    "solidity",
+    "ethers",
+    "web3",
+    "hardhat",
+    "truffle",
+    "brownie",
+    "thirdweb",
+  ];
   if (blockchain.some((k) => n.includes(k))) return "blockchain";
 
   // CSS / UI
-  const ui = ["tailwind", "material-ui", "bootstrap", "chakra", "styled-components"];
+  const ui = [
+    "tailwind",
+    "material-ui",
+    "bootstrap",
+    "chakra",
+    "styled-components",
+  ];
   if (ui.some((k) => n.includes(k))) return "other";
 
   // Utilities that say little
@@ -106,7 +167,12 @@ async function detectTechFromDeps(
 
   try {
     if (packageJson) {
-      const depFields = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
+      const depFields = [
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+      ];
       for (const f of depFields) {
         if (packageJson[f] && typeof packageJson[f] === "object") {
           depsList.push(...Object.keys(packageJson[f]));
@@ -132,7 +198,9 @@ async function detectTechFromDeps(
   }
 
   // normalize and dedupe
-  depsList = Array.from(new Set(depsList.map((d) => (d || "").toLowerCase()))).filter(Boolean);
+  depsList = Array.from(
+    new Set(depsList.map((d) => (d || "").toLowerCase()))
+  ).filter(Boolean);
 
   // 2) Rule-based classification
   const result: Record<string, Set<string>> = {
@@ -222,14 +290,31 @@ If uncertain, choose "other".
 --------------------------------------------------------*/
 export async function POST(req: NextRequest) {
   try {
-    const { repoUrl } = await req.json();
-    if (!repoUrl) return NextResponse.json({ error: "Repo URL is required." }, { status: 400 });
+    const body = await req.json();
+    const { repoUrl, owner, repo } = body;
 
-    const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-    if (!match) return NextResponse.json({ error: "Invalid GitHub URL" }, { status: 400 });
+    let finalOwner: string;
+    let finalRepo: string;
 
-    const owner = match[1];
-    const repo = match[2];
+    // Support both formats: repoUrl or owner/repo
+    if (repoUrl) {
+      const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+      if (!match)
+        return NextResponse.json(
+          { error: "Invalid GitHub URL" },
+          { status: 400 }
+        );
+      finalOwner = match[1];
+      finalRepo = match[2];
+    } else if (owner && repo) {
+      finalOwner = owner;
+      finalRepo = repo;
+    } else {
+      return NextResponse.json(
+        { error: "Either repoUrl or owner/repo is required." },
+        { status: 400 }
+      );
+    }
 
     const headers = {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
@@ -238,14 +323,35 @@ export async function POST(req: NextRequest) {
     };
 
     /* Basic repo data */
-    const repoData = await (await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers })).json();
-    const readmeData = await (await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers })).json();
-    const readmeText = readmeData?.content ? Buffer.from(readmeData.content, "base64").toString("utf8") : "README not found.";
-    const rootFiles = await (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers })).json();
-    const commits = await (await fetch(`https://api.github.com/repos/${owner}/${repo}/commits`, { headers })).json();
+    const repoData = await (
+      await fetch(`https://api.github.com/repos/${finalOwner}/${finalRepo}`, {
+        headers,
+      })
+    ).json();
+    const readmeData = await (
+      await fetch(
+        `https://api.github.com/repos/${finalOwner}/${finalRepo}/readme`,
+        { headers }
+      )
+    ).json();
+    const readmeText = readmeData?.content
+      ? Buffer.from(readmeData.content, "base64").toString("utf8")
+      : "README not found.";
+    const rootFiles = await (
+      await fetch(
+        `https://api.github.com/repos/${finalOwner}/${finalRepo}/contents`,
+        { headers }
+      )
+    ).json();
+    const commits = await (
+      await fetch(
+        `https://api.github.com/repos/${finalOwner}/${finalRepo}/commits`,
+        { headers }
+      )
+    ).json();
 
     /* Full recursive file list */
-    const allFiles = await fetchAllFiles(owner, repo);
+    const allFiles = await fetchAllFiles(finalOwner, finalRepo);
     const fileNames = allFiles.map((f) => f.path.toLowerCase());
 
     /* Dependency extraction */
@@ -264,10 +370,14 @@ export async function POST(req: NextRequest) {
 
     /* Prepare Gemini model for optional AI classification */
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     /* New: AI-powered dependency classifier (rule-based + AI) */
-    const aiDetectedTech = await detectTechFromDeps(packageJson, requirementsTxt, model);
+    const aiDetectedTech = await detectTechFromDeps(
+      packageJson,
+      requirementsTxt,
+      model
+    );
 
     /* Rule-based README and file detection (as before) */
     const readmeLower = readmeText.toLowerCase();
@@ -285,7 +395,9 @@ export async function POST(req: NextRequest) {
     };
 
     const codeTech = {
-      react: fileNames.some((p: string) => p.includes("app.jsx") || p.includes("app.tsx")),
+      react: fileNames.some(
+        (p: string) => p.includes("app.jsx") || p.includes("app.tsx")
+      ),
       nextjs: fileNames.some((p: string) => p.includes("next.config.js")),
       node: fileNames.some((p: string) => p.includes("package.json")),
       express: deps.includes("express"),
@@ -296,7 +408,9 @@ export async function POST(req: NextRequest) {
     };
 
     /* TECH SCORE: merge README claims + aiDetectedTech (from deps) */
-    const aiFlat = Object.values(aiDetectedTech).flat().map((t: any) => (t || "").toLowerCase());
+    const aiFlat = Object.values(aiDetectedTech)
+      .flat()
+      .map((t: any) => (t || "").toLowerCase());
     const claimedSet = new Set([
       ...Object.keys(techMatches).filter((k) => techMatches[k]),
       ...aiFlat,
@@ -327,11 +441,13 @@ export async function POST(req: NextRequest) {
     /* Activity */
     const lastPush = new Date(repoData.pushed_at).getTime();
     const daysSince = (Date.now() - lastPush) / 86400000;
-    const ActivityScore = daysSince <= 7 ? 15 : daysSince <= 30 ? 10 : daysSince <= 90 ? 5 : 2;
+    const ActivityScore =
+      daysSince <= 7 ? 15 : daysSince <= 30 ? 10 : daysSince <= 90 ? 5 : 2;
 
     /* Commits */
     const ci = commits.length;
-    const CommitIntegrityScore = ci >= 15 ? 15 : ci >= 8 ? 12 : ci >= 4 ? 8 : ci >= 2 ? 5 : 1;
+    const CommitIntegrityScore =
+      ci >= 15 ? 15 : ci >= 8 ? 12 : ci >= 4 ? 8 : ci >= 2 ? 5 : 1;
 
     /* Penalties + reasons */
     let FraudPenalty = 0;
@@ -342,7 +458,9 @@ export async function POST(req: NextRequest) {
     }
     if (mentioned > matched) {
       FraudPenalty += 5;
-      fraudReasons.push("README/deps claim tech that isn't found in file names/deps.");
+      fraudReasons.push(
+        "README/deps claim tech that isn't found in file names/deps."
+      );
     }
     if (fc <= 3) {
       FraudPenalty += 5;
@@ -352,17 +470,30 @@ export async function POST(req: NextRequest) {
     const EmptyPenalty = fc < 3 ? 10 : fc < 5 ? 5 : 0;
 
     /* Final score */
-    let FinalScore = TechScore + ReadmeScore + StructureScore + ActivityScore + CommitIntegrityScore - FraudPenalty - EmptyPenalty;
+    let FinalScore =
+      TechScore +
+      ReadmeScore +
+      StructureScore +
+      ActivityScore +
+      CommitIntegrityScore -
+      FraudPenalty -
+      EmptyPenalty;
     FinalScore = Math.max(0, Math.min(100, FinalScore));
 
     /* Explanations (include fraud reasons) */
     const explanations = {
-      tech: `TechScore ${TechScore.toFixed(1)}/20 — matched ${matched}/${mentioned}.`,
+      tech: `TechScore ${TechScore.toFixed(
+        1
+      )}/20 — matched ${matched}/${mentioned}.`,
       readme: `ReadmeScore ${ReadmeScore}/20`,
       structure: `StructureScore ${StructureScore}/20 — ${fc} files scanned.`,
-      activity: `ActivityScore ${ActivityScore}/15 — last push ${Math.round(daysSince)} days ago.`,
+      activity: `ActivityScore ${ActivityScore}/15 — last push ${Math.round(
+        daysSince
+      )} days ago.`,
       commits: `CommitScore ${CommitIntegrityScore}/15 — ${ci} commits.`,
-      fraud: fraudReasons.length ? `FraudPenalty -${FraudPenalty} — ${fraudReasons.join("; ")}` : `FraudPenalty 0 — No major red flags.`,
+      fraud: fraudReasons.length
+        ? `FraudPenalty -${FraudPenalty} — ${fraudReasons.join("; ")}`
+        : `FraudPenalty 0 — No major red flags.`,
       empty: `EmptyPenalty -${EmptyPenalty}`,
       final: `FinalScore ${FinalScore.toFixed(1)}/100`,
     };
@@ -379,7 +510,10 @@ Files (first 80):
 ${fileNames.slice(0, 80).join(", ")}
 
 Detected dependencies (sample):
-${(Object.entries(aiDetectedTech)).slice(0, 20).map(([k,v])=>`${k}: ${v}`).join("\n")}
+${Object.entries(aiDetectedTech)
+  .slice(0, 20)
+  .map(([k, v]) => `${k}: ${v}`)
+  .join("\n")}
 
 Tasks:
 1) Extract top 3 features from README.
@@ -416,6 +550,9 @@ Tasks:
     });
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ error: err?.message ?? "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message ?? "Internal server error" },
+      { status: 500 }
+    );
   }
 }
