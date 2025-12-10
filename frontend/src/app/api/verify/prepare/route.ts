@@ -16,7 +16,9 @@ const githubVerifierContract = getContract({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔷 Prepare verification started');
     const { walletAddress } = await request.json();
+    console.log('📍 Wallet address:', walletAddress);
     
     if (!walletAddress) {
       return NextResponse.json({ error: 'Wallet address required' }, { status: 400 });
@@ -26,19 +28,17 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const githubUserCookie = cookieStore.get('github_user');
     
+    console.log('🍪 GitHub cookie exists:', !!githubUserCookie);
+    
     if (!githubUserCookie) {
       return NextResponse.json({ error: 'No GitHub session found' }, { status: 401 });
     }
 
-    let githubUser;
-    try {
-      githubUser = JSON.parse(githubUserCookie.value);
-    } catch (parseError) {
-      console.error('Failed to parse GitHub user cookie:', parseError);
-      return NextResponse.json({ error: 'Invalid GitHub session' }, { status: 401 });
-    }
+    const githubUser = JSON.parse(githubUserCookie.value);
+    console.log('👤 GitHub user:', githubUser.login);
 
     // Get the current nonce from the contract
+    console.log('📞 Calling contract to get nonce...');
     let nonce;
     try {
       nonce = await readContract({
@@ -46,9 +46,10 @@ export async function POST(request: NextRequest) {
         method: 'function getNonce(address user) view returns (uint256)',
         params: [walletAddress as `0x${string}`],
       });
+      console.log('✅ Nonce received:', nonce.toString());
     } catch (contractError) {
-      console.error('Failed to read nonce from contract:', contractError);
-      return NextResponse.json({ error: 'Failed to fetch nonce from blockchain' }, { status: 500 });
+      console.error('❌ Contract error:', contractError);
+      throw new Error(`Contract call failed: ${contractError}`);
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
+    console.log('✅ Prepare verification completed successfully');
     return NextResponse.json({
       githubUser,
       nonce: nonce.toString(),
@@ -78,10 +80,11 @@ export async function POST(request: NextRequest) {
       chainId: 11155111, // Sepolia
     });
   } catch (error: any) {
-    console.error('Prepare verification error:', error);
+    console.error('❌ Prepare verification error:', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json({ 
-      error: error?.message || 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      error: 'Internal server error',
+      details: error.message 
     }, { status: 500 });
   }
 }

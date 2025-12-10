@@ -11,6 +11,7 @@ import {
   Star,
   GitFork,
   ExternalLink,
+  Users,
 } from "lucide-react";
 
 interface User {
@@ -149,6 +150,16 @@ export default function ProfilePage() {
                 User ID
               </label>
               <p className="text-base font-mono text-sm">{user.id}</p>
+            </div>
+            <div className="pt-4 border-t">
+              <Button
+                onClick={() => router.push("/my-teams")}
+                className="w-full"
+                size="lg"
+              >
+                <Users className="h-5 w-5 mr-2" />
+                View My Teams
+              </Button>
             </div>
           </CardContent>
         </Card>

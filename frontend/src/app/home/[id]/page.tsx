@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { readContract } from "thirdweb";
+import { readContract, prepareContractCall } from "thirdweb";
+import { TransactionButton } from "thirdweb/react";
+import { useActiveAccount } from "thirdweb/react";
 import {
   Card,
   CardContent,
@@ -10,6 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Calendar,
@@ -19,12 +29,14 @@ import {
   ExternalLink,
   Trophy,
   Sparkles,
-  ArrowRight,
   UserPlus,
   Key,
+  CheckCircle,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mainContract } from "@/constants/contracts";
+import { toast } from "sonner";
 
 interface Hackathon {
   id: bigint;
@@ -45,14 +57,51 @@ interface Hackathon {
   judges?: string[];
 }
 
+interface Team {
+  id: bigint;
+  creator: string;
+  metadataURI: string;
+  members: string[];
+  joinCodeHash: string;
+  exists: boolean;
+}
+
+interface TeamMetadata {
+  name: string;
+  description?: string;
+  image?: string;
+}
+
+interface TeamRegistration {
+  registered: boolean;
+  staked: boolean;
+  staker: string;
+  tokensMinted: boolean;
+  projectSubmitted: boolean;
+  repoHash: string;
+  aiScore: bigint;
+  judgeScore: bigint;
+  participantScore: bigint;
+  finalScore: bigint;
+  ranking: bigint;
+  scoreFinalized: boolean;
+}
+
 export default function HackathonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const hackathonId = params.id as string;
+  const account = useActiveAccount();
 
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userTeams, setUserTeams] = useState<(Team & { metadata?: TeamMetadata })[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<Map<string, TeamRegistration>>(new Map());
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isStakeDialogOpen, setIsStakeDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchHackathonDetails = async () => {
@@ -103,6 +152,99 @@ export default function HackathonDetailPage() {
       fetchHackathonDetails();
     }
   }, [hackathonId]);
+
+  useEffect(() => {
+    const fetchUserTeams = async () => {
+      if (!account?.address) {
+        setUserTeams([]);
+        return;
+      }
+
+      try {
+        setLoadingTeams(true);
+
+        // Get user's team IDs
+        const teamIds = (await readContract({
+          contract: mainContract,
+          method: "function getUserTeams(address user) view returns (uint256[])",
+          params: [account.address],
+        })) as bigint[];
+
+        if (teamIds.length === 0) {
+          setUserTeams([]);
+          setLoadingTeams(false);
+          return;
+        }
+
+        // Fetch team details and registration status
+        const teamsData = await Promise.all(
+          teamIds.map(async (teamId) => {
+            try {
+              const team = (await readContract({
+                contract: mainContract,
+                method:
+                  "function getTeam(uint256 id) view returns ((uint256 id, address creator, string metadataURI, address[] members, bytes32 joinCodeHash, bool exists))",
+                params: [teamId],
+              })) as Team;
+
+              // Fetch registration status
+              const registration = (await readContract({
+                contract: mainContract,
+                method:
+                  "function getTeamRegistration(uint256 hackathonId, uint256 teamId) view returns ((bool registered, bool staked, address staker, bool tokensMinted, bool projectSubmitted, bytes32 repoHash, uint256 aiScore, uint256 judgeScore, uint256 participantScore, uint256 finalScore, uint256 ranking, bool scoreFinalized))",
+                params: [BigInt(hackathonId), teamId],
+              })) as TeamRegistration;
+
+              // Store registration status
+              setRegistrationStatus((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(teamId.toString(), registration);
+                return newMap;
+              });
+
+              // Fetch metadata from IPFS
+              let metadata: TeamMetadata | undefined;
+              if (team.metadataURI) {
+                try {
+                  const ipfsUrl = team.metadataURI.replace(
+                    "ipfs://",
+                    "https://gateway.pinata.cloud/ipfs/"
+                  );
+                  const response = await fetch(ipfsUrl);
+                  if (response.ok) {
+                    metadata = await response.json();
+                  }
+                } catch (metaError) {
+                  console.error(`Failed to fetch metadata for team ${teamId}:`, metaError);
+                }
+              }
+
+              return {
+                ...team,
+                metadata,
+              };
+            } catch (err) {
+              console.error(`Error fetching team ${teamId}:`, err);
+              return null;
+            }
+          })
+        );
+
+        const validTeams = teamsData.filter((team) => team !== null) as (Team & {
+          metadata?: TeamMetadata;
+        })[];
+        setUserTeams(validTeams);
+      } catch (err) {
+        console.error("Error fetching user teams:", err);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+
+    if (hackathonId && account?.address) {
+      fetchUserTeams();
+    }
+  }, [hackathonId, account?.address]);
 
   const formatDate = (timestamp: bigint) => {
     return new Date(Number(timestamp) * 1000).toLocaleString("en-US", {
@@ -545,6 +687,264 @@ export default function HackathonDetailPage() {
                   <Key className="mr-2 h-5 w-5" />
                   Join Team
                 </Button>
+
+                {/* Register Team Dialog */}
+                <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full border-2 border-green-500/30 hover:border-green-500/50 hover:bg-green-500/10 font-bold py-6 text-base cursor-pointer"
+                      disabled={!account?.address || loadingTeams}
+                    >
+                      <CheckCircle className="mr-2 h-5 w-5" />
+                      Register Team
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl">Register Team for Hackathon</DialogTitle>
+                      <DialogDescription>
+                        Select a team to register for this hackathon. Registration is required before staking.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      {!account?.address && (
+                        <p className="text-center text-muted-foreground py-8">
+                          Please connect your wallet to register a team
+                        </p>
+                      )}
+                      {account?.address && loadingTeams && (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          <p className="ml-3 text-muted-foreground">Loading your teams...</p>
+                        </div>
+                      )}
+                      {account?.address && !loadingTeams && userTeams.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground mb-4">You don't have any teams yet</p>
+                          <Button onClick={() => router.push("/CreateTeam")}>Create Team</Button>
+                        </div>
+                      )}
+                      {account?.address && !loadingTeams && userTeams.length > 0 && (
+                        <div className="space-y-3">
+                          {userTeams.map((team) => {
+                            const regStatus = registrationStatus.get(team.id.toString());
+                            const isRegistered = regStatus?.registered || false;
+                            return (
+                              <Card
+                                key={team.id.toString()}
+                                className={`cursor-pointer transition-all ${
+                                  selectedTeamId === team.id.toString()
+                                    ? "border-2 border-primary bg-primary/5"
+                                    : "border hover:border-primary/50"
+                                } ${isRegistered ? "opacity-50" : ""}`}
+                                onClick={() => !isRegistered && setSelectedTeamId(team.id.toString())}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                      <h3 className="font-bold text-lg mb-1">
+                                        {team.metadata?.name || `Team #${team.id.toString()}`}
+                                      </h3>
+                                      {team.metadata?.description && (
+                                        <p className="text-sm text-muted-foreground mb-2">
+                                          {team.metadata.description}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground">
+                                        {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+                                      </p>
+                                      {isRegistered && (
+                                        <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                          <CheckCircle className="h-3 w-3" />
+                                          Already Registered
+                                        </div>
+                                      )}
+                                    </div>
+                                    {team.metadata?.image && (
+                                      <img
+                                        src={team.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")}
+                                        alt={team.metadata.name || "Team"}
+                                        className="w-16 h-16 rounded-lg object-cover border"
+                                      />
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {selectedTeamId && !registrationStatus.get(selectedTeamId)?.registered && (
+                        <div className="pt-4 border-t">
+                          <TransactionButton
+                            transaction={() => {
+                              return prepareContractCall({
+                                contract: mainContract,
+                                method: "function registerTeam(uint256 hackathonId, uint256 teamId)",
+                                params: [BigInt(hackathonId), BigInt(selectedTeamId)],
+                              });
+                            }}
+                            onTransactionConfirmed={() => {
+                              toast.success("Team registered successfully!");
+                              setIsRegisterDialogOpen(false);
+                              setSelectedTeamId(null);
+                              // Refresh the page to update status
+                              window.location.reload();
+                            }}
+                            onError={(error) => {
+                              console.error("Registration error:", error);
+                              toast.error(`Registration failed: ${error.message}`);
+                            }}
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6"
+                          >
+                            Register Team #{selectedTeamId}
+                          </TransactionButton>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Stake for Team Dialog */}
+                <Dialog open={isStakeDialogOpen} onOpenChange={setIsStakeDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full border-2 border-yellow-500/30 hover:border-yellow-500/50 hover:bg-yellow-500/10 font-bold py-6 text-base cursor-pointer"
+                      disabled={!account?.address || loadingTeams}
+                    >
+                      <Lock className="mr-2 h-5 w-5" />
+                      Stake for Team
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl">Stake for Team</DialogTitle>
+                      <DialogDescription>
+                        Select a registered team to stake {formatEther(hackathon.stakeAmount)} ETH
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      {!account?.address && (
+                        <p className="text-center text-muted-foreground py-8">
+                          Please connect your wallet to stake
+                        </p>
+                      )}
+                      {account?.address && loadingTeams && (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          <p className="ml-3 text-muted-foreground">Loading your teams...</p>
+                        </div>
+                      )}
+                      {account?.address && !loadingTeams && userTeams.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground mb-4">You don&apos;t have any teams yet</p>
+                          <Button onClick={() => router.push("/CreateTeam")}>Create Team</Button>
+                        </div>
+                      )}
+                      {account?.address && !loadingTeams && userTeams.length > 0 && (
+                        <>
+                          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                            <p className="text-sm font-semibold mb-2">Stake Amount Required:</p>
+                            <p className="text-3xl font-bold text-yellow-400">
+                              {formatEther(hackathon.stakeAmount)} ETH
+                            </p>
+                          </div>
+                          <div className="space-y-3">
+                            {userTeams.map((team) => {
+                              const regStatus = registrationStatus.get(team.id.toString());
+                              const isRegistered = regStatus?.registered || false;
+                              const isStaked = regStatus?.staked || false;
+                              const canStake = isRegistered && !isStaked;
+                              return (
+                                <Card
+                                  key={team.id.toString()}
+                                  className={`cursor-pointer transition-all ${
+                                    selectedTeamId === team.id.toString()
+                                      ? "border-2 border-primary bg-primary/5"
+                                      : "border hover:border-primary/50"
+                                  } ${!canStake ? "opacity-50" : ""}`}
+                                  onClick={() => canStake && setSelectedTeamId(team.id.toString())}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <h3 className="font-bold text-lg mb-1">
+                                          {team.metadata?.name || `Team #${team.id.toString()}`}
+                                        </h3>
+                                        {team.metadata?.description && (
+                                          <p className="text-sm text-muted-foreground mb-2">
+                                            {team.metadata.description}
+                                          </p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                          {team.members.length} member{team.members.length !== 1 ? "s" : ""}
+                                        </p>
+                                        {!isRegistered && (
+                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                                            Not Registered
+                                          </div>
+                                        )}
+                                        {isStaked && (
+                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                                            <Lock className="h-3 w-3" />
+                                            Already Staked
+                                          </div>
+                                        )}
+                                        {isRegistered && !isStaked && (
+                                          <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-primary/20 text-primary rounded-full text-xs font-semibold">
+                                            Ready to Stake
+                                          </div>
+                                        )}
+                                      </div>
+                                      {team.metadata?.image && (
+                                        <img
+                                          src={team.metadata.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")}
+                                          alt={team.metadata.name || "Team"}
+                                          className="w-16 h-16 rounded-lg object-cover border"
+                                        />
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                      {selectedTeamId && registrationStatus.get(selectedTeamId)?.registered && !registrationStatus.get(selectedTeamId)?.staked && (
+                        <div className="pt-4 border-t">
+                          <TransactionButton
+                            transaction={() => {
+                              return prepareContractCall({
+                                contract: mainContract,
+                                method: "function stakeForTeam(uint256 hackathonId, uint256 teamId) payable",
+                                params: [BigInt(hackathonId), BigInt(selectedTeamId)],
+                                value: hackathon.stakeAmount,
+                              });
+                            }}
+                            onTransactionConfirmed={() => {
+                              toast.success(`Successfully staked ${formatEther(hackathon.stakeAmount)} ETH!`);
+                              setIsStakeDialogOpen(false);
+                              setSelectedTeamId(null);
+                              // Refresh the page to update status
+                              window.location.reload();
+                            }}
+                            onError={(error) => {
+                              console.error("Staking error:", error);
+                              toast.error(`Staking failed: ${error.message}`);
+                            }}
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-6"
+                          >
+                            Stake {formatEther(hackathon.stakeAmount)} ETH for Team #{selectedTeamId}
+                          </TransactionButton>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <Button
                   onClick={() =>
                     router.push(`/sponsor/${hackathon.id.toString()}`)
