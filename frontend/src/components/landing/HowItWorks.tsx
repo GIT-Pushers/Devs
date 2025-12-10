@@ -24,7 +24,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 bg-background relative">
+    <section id="how-it-works" className="relative py-24 bg-transparent">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           className="text-center mb-16"
@@ -61,7 +61,7 @@ export function HowItWorks() {
               className="flex flex-col items-center text-center cursor-pointer"
             >
               <motion.div
-                className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4 border border-border"
+                className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center mb-4 border border-border/70 shadow-sm"
                 whileHover={{
                   rotate: 360,
                   scale: 1.1,
@@ -82,7 +82,9 @@ export function HowItWorks() {
               <h3 className="text-xl font-semibold mb-2 text-foreground">
                 {step.title}
               </h3>
-              <p className="text-muted-foreground">{step.description}</p>
+              <p className="text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
             </motion.div>
           ))}
         </div>

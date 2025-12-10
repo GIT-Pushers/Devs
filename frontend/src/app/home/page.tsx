@@ -19,6 +19,7 @@ import {
   Trophy,
   ArrowRight,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -146,11 +147,21 @@ const HackathonDisplayPage = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Enhanced Header */}
         <div className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-1 w-12 bg-primary"></div>
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">
-              Active Hackathons
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-1 w-12 bg-primary"></div>
+              <span className="text-primary text-sm font-semibold uppercase tracking-wider">
+                Active Hackathons
+              </span>
+            </div>
+            <Button
+              onClick={() => router.push("/Createhack")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Hackathon
+            </Button>
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
             Discover & Compete

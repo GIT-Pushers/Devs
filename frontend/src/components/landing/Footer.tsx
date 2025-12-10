@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-background">
+    <footer className="border-t border-border/70 bg-secondary/40 backdrop-blur">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <motion.div
@@ -14,7 +14,7 @@ export function Footer() {
             viewport={{ once: true }}
           >
             <h3 className="text-2xl font-bold mb-4 text-foreground">HACKX</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
               Fully Decentralized Hackathon Platform.
             </p>
             <p className="text-sm text-muted-foreground">
@@ -110,7 +110,7 @@ export function Footer() {
             </div>
           </motion.div>
         </div>
-        <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
+        <div className="pt-8 border-t border-border/70 text-center text-sm text-muted-foreground">
           <p>© 2025 HACKX. All rights reserved.</p>
         </div>
       </div>

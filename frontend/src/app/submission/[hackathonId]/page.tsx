@@ -362,9 +362,22 @@ export default function SubmissionPage() {
       }
 
       const { IpfsHash } = await pinataResponse.json();
-      const repoHashBytes32 = `0x${Buffer.from(IpfsHash)
-        .toString("hex")
-        .padEnd(64, "0")}` as `0x${string}`;
+
+      // Convert IPFS hash to bytes32
+      // IPFS CIDv0 starts with "Qm" and is base58 encoded
+      // We need to convert it to a 32-byte hex string
+      const hashBytes = Buffer.from(IpfsHash, "utf-8");
+      const hashHex = hashBytes.toString("hex");
+
+      // Pad or truncate to exactly 32 bytes (64 hex chars)
+      let repoHashBytes32: `0x${string}`;
+      if (hashHex.length <= 64) {
+        // Pad with zeros if too short
+        repoHashBytes32 = `0x${hashHex.padEnd(64, "0")}` as `0x${string}`;
+      } else {
+        // Truncate if too long (shouldn't happen with proper IPFS hash)
+        repoHashBytes32 = `0x${hashHex.substring(0, 64)}` as `0x${string}`;
+      }
 
       setSubmissionHash(IpfsHash);
       setUploadingToIPFS(false);

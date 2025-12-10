@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { readContract, prepareContractCall } from "thirdweb";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { prepareContractCall, readContract } from "thirdweb";
+import { TransactionButton, useActiveAccount } from "thirdweb/react";
+import { mainContract } from "@/app/constants/contracts";
+import { Loader2, Award, AlertCircle, CheckCircle2 } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ArrowLeft, Loader2, CheckCircle, Award } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { mainContract } from "@/constants/contracts";
-import { toast } from "sonner";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Team {
   id: bigint;
@@ -59,12 +58,8 @@ interface NFTMetadata {
 export default function MintNFTPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const hackathonId = params.hackathonId as string;
-  const teamIdParam = searchParams.get("teamId");
   const account = useActiveAccount();
-  const { mutate: sendTransaction, isPending: isTransactionPending } =
-    useSendTransaction();
 
   const [team, setTeam] = useState<(Team & { metadata?: TeamMetadata }) | null>(
     null
@@ -74,11 +69,41 @@ export default function MintNFTPage() {
   );
   const [loading, setLoading] = useState(true);
   const [uploadingToIPFS, setUploadingToIPFS] = useState(false);
-  const [nftMinted, setNftMinted] = useState(false);
+  const [nftMetadataURI, setNftMetadataURI] = useState<string>("");
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [userTeams, setUserTeams] = useState<bigint[]>([]);
+
+  useEffect(() => {
+    const fetchUserTeams = async () => {
+      if (!account?.address) return;
+
+      try {
+        setLoading(true);
+        // Get user's teams
+        const teams = (await readContract({
+          contract: mainContract,
+          method:
+            "function getUserTeams(address user) view returns (uint256[])",
+          params: [account.address],
+        })) as bigint[];
+
+        setUserTeams(teams);
+        if (teams.length > 0 && !selectedTeamId) {
+          setSelectedTeamId(teams[0].toString());
+        }
+      } catch (error) {
+        console.error("Error fetching user teams:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserTeams();
+  }, [account?.address, selectedTeamId]);
 
   useEffect(() => {
     const fetchTeamData = async () => {
-      if (!account?.address || !teamIdParam) return;
+      if (!account?.address || !selectedTeamId || !hackathonId) return;
 
       try {
         setLoading(true);
@@ -88,46 +113,24 @@ export default function MintNFTPage() {
           contract: mainContract,
           method:
             "function getTeam(uint256 id) view returns ((uint256 id, address creator, string metadataURI, address[] members, bytes32 joinCodeHash, bool exists))",
-          params: [BigInt(teamIdParam)],
+          params: [BigInt(selectedTeamId)],
         })) as Team;
-
-        // Check if user is a member
-        const isMember = teamData.members.some(
-          (member) => member.toLowerCase() === account.address?.toLowerCase()
-        );
-        if (!isMember) {
-          toast.error("You are not a member of this team");
-          router.push(`/home/${hackathonId}`);
-          return;
-        }
 
         // Fetch registration details
         const regData = (await readContract({
           contract: mainContract,
           method:
             "function getTeamRegistration(uint256 hackathonId, uint256 teamId) view returns ((bool registered, bool staked, address staker, bool tokensMinted, bool projectSubmitted, bytes32 repoHash, uint256 aiScore, uint256 judgeScore, uint256 participantScore, uint256 finalScore, uint256 ranking, bool scoreFinalized))",
-          params: [BigInt(hackathonId), BigInt(teamIdParam)],
+          params: [BigInt(hackathonId), BigInt(selectedTeamId)],
         })) as TeamRegistration;
 
-        // Check if project was submitted
-        if (!regData.projectSubmitted) {
-          toast.error("Project not submitted yet");
-          router.push(`/submission/${hackathonId}`);
-          return;
-        }
-
-        // Check if already minted
-        if (regData.tokensMinted) {
-          setNftMinted(true);
-        }
-
-        // Fetch team metadata
+        // Fetch team metadata from IPFS
         let metadata: TeamMetadata | undefined;
         if (teamData.metadataURI) {
           try {
             const ipfsUrl = teamData.metadataURI.replace(
               "ipfs://",
-              "https://gateway.pinata.cloud/ipfs/"
+              "https://tomato-main-magpie-286.mypinata.cloud/ipfs/"
             );
             const response = await fetch(ipfsUrl);
             if (response.ok) {
@@ -142,34 +145,39 @@ export default function MintNFTPage() {
         setRegistration(regData);
       } catch (error) {
         console.error("Error fetching team data:", error);
-        toast.error("Error loading team data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchTeamData();
-  }, [account?.address, teamIdParam, hackathonId, router]);
+  }, [account?.address, selectedTeamId, hackathonId]);
 
-  const handleMintNFT = async () => {
-    if (!team || !registration || !teamIdParam) {
-      toast.error("Missing required data");
+  const handleGenerateMetadata = async () => {
+    if (!team || !registration || !selectedTeamId || !account?.address) {
+      alert("Missing required data");
+      return;
+    }
+
+    if (!registration.projectSubmitted) {
+      alert("Project not submitted yet!");
       return;
     }
 
     try {
       setUploadingToIPFS(true);
 
-      // Create NFT metadata
+      // Create NFT metadata JSON
       const nftMetadata: NFTMetadata = {
         name: `GLYTCH Hackathon #${hackathonId} - ${
-          team.metadata?.name || `Team #${teamIdParam}`
+          team.metadata?.name || `Team #${selectedTeamId}`
         }`,
         description: `Participation NFT for ${
-          team.metadata?.name || `Team #${teamIdParam}`
-        } in Hackathon #${hackathonId}. AI Score: ${registration.aiScore.toString()}/100`,
+          team.metadata?.name || `Team #${selectedTeamId}`
+        } in Hackathon #${hackathonId}. This NFT represents completion and participation in the hackathon with verifiable on-chain scores.`,
         image:
-          "ipfs://bafkreidzslse25yfgophsdyk54znibm3gnceyymedgpnyk7re66mysizvi",
+          team.metadata?.image ||
+          "https://tomato-main-magpie-286.mypinata.cloud/ipfs/bafkreidzslse25yfgophsdyk54znibm3gnceyymedgpnyk7re66mysizvi",
         attributes: [
           {
             trait_type: "Hackathon ID",
@@ -177,11 +185,11 @@ export default function MintNFTPage() {
           },
           {
             trait_type: "Team ID",
-            value: teamIdParam,
+            value: selectedTeamId,
           },
           {
             trait_type: "Team Name",
-            value: team.metadata?.name || `Team #${teamIdParam}`,
+            value: team.metadata?.name || `Team #${selectedTeamId}`,
           },
           {
             trait_type: "AI Score",
@@ -201,80 +209,71 @@ export default function MintNFTPage() {
           },
           {
             trait_type: "Ranking",
-            value: Number(registration.ranking),
+            value: Number(registration.ranking) || "Not Ranked",
           },
           {
-            trait_type: "Score Finalized",
-            value: registration.scoreFinalized ? "Yes" : "No",
+            trait_type: "Project Submitted",
+            value: registration.projectSubmitted ? "Yes" : "No",
           },
         ],
       };
 
-      // Upload NFT metadata to IPFS
-      const nftPinataResponse = await fetch(
+      // Upload to Pinata
+      const pinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT;
+      if (!pinataJWT) {
+        throw new Error("Pinata JWT not configured");
+      }
+
+      const response = await fetch(
         "https://api.pinata.cloud/pinning/pinJSONToIPFS",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+            Authorization: `Bearer ${pinataJWT}`,
           },
           body: JSON.stringify({
             pinataContent: nftMetadata,
             pinataMetadata: {
-              name: `nft-metadata-${hackathonId}-${teamIdParam}.json`,
+              name: `nft-metadata-h${hackathonId}-t${selectedTeamId}.json`,
             },
           }),
         }
       );
 
-      if (!nftPinataResponse.ok) {
-        throw new Error("Failed to upload NFT metadata to IPFS");
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to upload to Pinata: ${errorData}`);
       }
 
-      const { IpfsHash: nftIpfsHash } = await nftPinataResponse.json();
-      const metadataURI = `ipfs://${nftIpfsHash}`;
+      const { IpfsHash } = await response.json();
+      const metadataURI = `ipfs://${IpfsHash}`;
+      setNftMetadataURI(metadataURI);
 
-      setUploadingToIPFS(false);
-
-      // Mint NFT on blockchain
-      const transaction = prepareContractCall({
-        contract: mainContract,
-        method:
-          "function mintParticipationNFT(uint256 hackathonId, uint256 teamId, string metadataURI)",
-        params: [BigInt(hackathonId), BigInt(teamIdParam), metadataURI],
-      });
-
-      sendTransaction(transaction, {
-        onSuccess: () => {
-          toast.success("NFT minted successfully!");
-          setNftMinted(true);
-        },
-        onError: (error) => {
-          console.error("NFT minting error:", error);
-          toast.error(`Failed to mint NFT: ${error.message}`);
-        },
-      });
+      alert(`Metadata uploaded successfully! URI: ${metadataURI}`);
     } catch (error) {
-      console.error("Error minting NFT:", error);
-      toast.error("Failed to mint NFT");
+      console.error("Error generating metadata:", error);
+      alert(
+        `Failed to generate metadata: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
       setUploadingToIPFS(false);
     }
   };
 
   if (!account?.address) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <div className="container mx-auto max-w-4xl py-8">
-          <Card className="border-2 shadow-xl">
-            <CardContent className="py-12 text-center">
-              <Award className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-              <p className="text-muted-foreground mb-6">
-                Please connect your wallet to mint your NFT
-              </p>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="w-full max-w-md bg-card rounded-lg shadow-xl p-8 text-center border border-border">
+          <Award className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Connect Your Wallet
+          </h2>
+          <p className="text-muted-foreground">
+            Please connect your wallet to mint your participation NFT
+          </p>
         </div>
       </div>
     );
@@ -282,234 +281,197 @@ export default function MintNFTPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <div className="container mx-auto max-w-4xl py-8">
-          <Card className="border-2 shadow-xl">
-            <CardContent className="py-12 text-center">
-              <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
-              <p className="text-muted-foreground">Loading team data...</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (!team || !registration) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <div className="container mx-auto max-w-4xl py-8">
-          <Card className="border-2 shadow-xl">
-            <CardContent className="py-12 text-center">
-              <h2 className="text-2xl font-bold mb-2">Team Not Found</h2>
-              <Button onClick={() => router.push(`/home/${hackathonId}`)}>
-                Back to Hackathon
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading team data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="container mx-auto max-w-4xl py-8">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-6">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-2xl mx-auto py-8">
+        <div className="bg-card rounded-lg shadow-xl p-6 border border-border">
+          <div className="flex items-center gap-3 mb-6">
             <Award className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Mint Participation NFT</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              Mint Participation NFT
+            </h1>
           </div>
-          <p className="text-muted-foreground text-lg">
-            Commemorate your participation in Hackathon #{hackathonId}
-          </p>
-        </div>
 
-        {/* NFT Minting Card */}
-        {nftMinted ? (
-          <Card className="border-2 border-success/50 bg-success/10 shadow-xl">
-            <CardContent className="py-12">
-              <div className="text-center space-y-6">
-                <CheckCircle className="h-20 w-20 text-success mx-auto" />
-                <div>
-                  <h2 className="text-3xl font-bold text-success mb-2">
-                    NFT Minted Successfully!
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    Your participation NFT has been minted to your wallet.
+          {/* Hackathon ID Display */}
+          <div className="mb-6 p-4 bg-accent rounded-lg">
+            <p className="text-sm text-muted-foreground">Hackathon ID</p>
+            <p className="text-2xl font-bold text-foreground">{hackathonId}</p>
+          </div>
+
+          {/* Team Selection */}
+          <div className="mb-6">
+            <Label
+              htmlFor="team-select"
+              className="text-sm font-medium text-foreground mb-2"
+            >
+              Select Your Team
+            </Label>
+            <Select
+              value={selectedTeamId}
+              onValueChange={(value) => setSelectedTeamId(value)}
+            >
+              <SelectTrigger id="team-select" className="w-full">
+                <SelectValue placeholder="Select a team..." />
+              </SelectTrigger>
+              <SelectContent>
+                {userTeams.map((teamId) => (
+                  <SelectItem key={teamId.toString()} value={teamId.toString()}>
+                    Team #{teamId.toString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Team Info */}
+          {team && registration && (
+            <div className="space-y-4 mb-6">
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">
+                  {team.metadata?.name || `Team #${selectedTeamId}`}
+                </h3>
+                {team.metadata?.description && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {team.metadata.description}
                   </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    onClick={() => router.push(`/home/${hackathonId}`)}
-                    variant="outline"
-                  >
-                    Back to Hackathon
-                  </Button>
-                  <Button
-                    onClick={() => router.push(`/participants/${hackathonId}`)}
-                  >
-                    View Participants
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-2 border-primary/50 shadow-xl">
-            <CardHeader className="border-b">
-              <CardTitle className="text-2xl">NFT Details</CardTitle>
-              <CardDescription>
-                Review your NFT details before minting
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              {/* NFT Preview */}
-              <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-6 rounded-lg border-2 border-primary/30">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-48 h-48 bg-gradient-to-br from-primary/40 to-primary/20 rounded-lg border-2 border-primary/50 flex items-center justify-center">
-                    <Award className="h-24 w-24 text-primary" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold mb-1">
-                      GLYTCH Hackathon #{hackathonId}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {team.metadata?.name || `Team #${teamIdParam}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* NFT Attributes */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Attributes</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Hackathon ID
-                    </p>
-                    <p className="font-semibold">#{hackathonId}</p>
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Team ID
-                    </p>
-                    <p className="font-semibold">#{teamIdParam}</p>
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      AI Score
-                    </p>
-                    <p className="font-semibold">
-                      {registration.aiScore.toString()}/100
-                    </p>
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Final Score
-                    </p>
-                    <p className="font-semibold">
-                      {registration.finalScore.toString()}
-                    </p>
-                  </div>
-                  {registration.ranking > BigInt(0) && (
-                    <div className="bg-muted p-3 rounded-lg col-span-2">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Ranking
-                      </p>
-                      <p className="font-semibold">
-                        #{registration.ranking.toString()}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Score Status */}
-              {!registration.scoreFinalized && (
-                <div className="bg-warning/10 border border-warning/30 p-4 rounded-lg">
-                  <p className="text-sm text-warning">
-                    ⚠️ Note: Scores are not yet finalized. You can still mint
-                    your NFT, but the final scores and ranking may change.
-                  </p>
-                </div>
-              )}
-
-              {registration.scoreFinalized && (
-                <div className="bg-success/10 border border-success/30 p-4 rounded-lg">
-                  <p className="text-sm text-success">
-                    ✓ Scores have been finalized! Your NFT will reflect the
-                    final results.
-                  </p>
-                </div>
-              )}
-
-              {/* Team Info */}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Team Information</h3>
-                <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Team Name</p>
-                    <p className="font-semibold">
-                      {team.metadata?.name || `Team #${teamIdParam}`}
-                    </p>
-                  </div>
-                  {team.metadata?.description && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        Description
-                      </p>
-                      <p className="text-sm">{team.metadata.description}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-xs text-muted-foreground">Members</p>
-                    <p className="font-semibold">
-                      {team.members.length} members
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mint Button */}
-              <Button
-                onClick={handleMintNFT}
-                disabled={uploadingToIPFS || isTransactionPending}
-                className="w-full"
-                size="lg"
-              >
-                {uploadingToIPFS || isTransactionPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {uploadingToIPFS
-                      ? "Uploading NFT metadata..."
-                      : "Minting NFT..."}
-                  </>
-                ) : (
-                  <>
-                    <Award className="mr-2 h-5 w-5" />
-                    Mint Participation NFT
-                  </>
                 )}
-              </Button>
 
-              {/* Info */}
-              <div className="text-center text-sm text-muted-foreground">
-                <p>
-                  Standard Image:
-                  bafkreidzslse25yfgophsdyk54znibm3gnceyymedgpnyk7re66mysizvi
-                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">AI Score:</span>
+                    <span className="ml-2 font-bold text-primary">
+                      {registration.aiScore.toString()}/100
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Judge Score:</span>
+                    <span className="ml-2 font-bold text-info">
+                      {registration.judgeScore.toString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">
+                      Participant Score:
+                    </span>
+                    <span className="ml-2 font-bold text-success">
+                      {registration.participantScore.toString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Final Score:</span>
+                    <span className="ml-2 font-bold text-warning">
+                      {registration.finalScore.toString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  {registration.projectSubmitted ? (
+                    <span className="flex items-center gap-1 text-success text-sm">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Project Submitted
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-destructive text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      Project Not Submitted
+                    </span>
+                  )}
+                  {registration.tokensMinted && (
+                    <span className="flex items-center gap-1 text-primary text-sm">
+                      <CheckCircle2 className="h-4 w-4" />
+                      NFT Already Minted
+                    </span>
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              {/* Generate Metadata Button */}
+              {!nftMetadataURI && registration.projectSubmitted && (
+                <button
+                  onClick={handleGenerateMetadata}
+                  disabled={uploadingToIPFS || registration.tokensMinted}
+                  className="w-full py-3 px-4 bg-success hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground text-success-foreground font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {uploadingToIPFS ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Uploading to IPFS...
+                    </>
+                  ) : (
+                    "Generate NFT Metadata"
+                  )}
+                </button>
+              )}
+
+              {/* Metadata URI Display */}
+              {nftMetadataURI && (
+                <div className="p-4 bg-accent rounded-lg border border-success">
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Metadata URI
+                  </p>
+                  <p className="text-xs font-mono text-foreground break-all">
+                    {nftMetadataURI}
+                  </p>
+                </div>
+              )}
+
+              {/* Mint NFT Button */}
+              {nftMetadataURI && !registration.tokensMinted && (
+                <TransactionButton
+                  transaction={() => {
+                    return prepareContractCall({
+                      contract: mainContract,
+                      method:
+                        "function mintParticipationNFT(uint256 hackathonId, uint256 teamId, string metadataURI)",
+                      params: [
+                        BigInt(hackathonId),
+                        BigInt(selectedTeamId),
+                        nftMetadataURI,
+                      ],
+                    });
+                  }}
+                  onTransactionSent={(result) => {
+                    console.log(
+                      "Transaction submitted",
+                      result.transactionHash
+                    );
+                  }}
+                  onTransactionConfirmed={(receipt) => {
+                    console.log(
+                      "Transaction confirmed",
+                      receipt.transactionHash
+                    );
+                    alert("NFT Minted Successfully! 🎉");
+                    router.push(`/home/${hackathonId}`);
+                  }}
+                  onError={(error) => {
+                    console.error("Transaction error", error);
+                    alert(`Error: ${error.message}`);
+                  }}
+                  className="w-full"
+                >
+                  Mint Participation NFT
+                </TransactionButton>
+              )}
+            </div>
+          )}
+
+          {!selectedTeamId && (
+            <div className="text-center py-8 text-muted-foreground">
+              Please select a team to continue
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

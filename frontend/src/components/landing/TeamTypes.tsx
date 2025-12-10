@@ -52,7 +52,8 @@ const features = [
 
 export function TeamTypes() {
   return (
-    <section id="features" className="py-24 bg-background relative">
+    <section id="features" className="relative py-24 bg-transparent">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(122,240,255,0.08),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(247,201,72,0.06),transparent_32%)]" />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           className="text-center mb-16"
@@ -86,14 +87,14 @@ export function TeamTypes() {
                 transition: { duration: 0.3 },
               }}
             >
-              <Card className="h-full bg-background border border-border hover:border-foreground/30 transition-colors">
+              <Card className="h-full border border-border/70 bg-secondary/50 hover:border-primary/50 transition-all duration-300 shadow-sm backdrop-blur">
                 <CardHeader>
                   <CardTitle className="text-lg text-foreground">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4 text-sm">
+                  <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
                     {feature.description}
                   </p>
                   <ul className="space-y-2">

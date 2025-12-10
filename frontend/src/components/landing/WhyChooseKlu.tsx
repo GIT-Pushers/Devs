@@ -27,7 +27,7 @@ const benefits = [
 
 export function WhyChooseHackX() {
   return (
-    <section id="why-hackx" className="py-24 bg-background relative">
+    <section id="why-hackx" className="relative py-24 bg-transparent">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           className="text-center mb-16"
@@ -61,14 +61,16 @@ export function WhyChooseHackX() {
                 transition: { duration: 0.3 },
               }}
             >
-              <Card className="bg-background border border-border hover:border-foreground/30 transition-colors">
+              <Card className="border border-border/70 bg-secondary/50 hover:border-primary/50 transition-all duration-300 shadow-sm backdrop-blur">
                 <CardHeader>
                   <CardTitle className="text-foreground">
                     {benefit.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{benefit.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {benefit.description}
+                  </p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -84,13 +86,13 @@ export function WhyChooseHackX() {
           }}
           className="max-w-4xl mx-auto"
         >
-          <Card className="border-2 border-border bg-background">
+          <Card className="overflow-hidden border border-border/70 bg-secondary/60 shadow-lg backdrop-blur">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-foreground">
                   Hackathon Workflow
                 </CardTitle>
-                <span className="text-sm text-muted-foreground">
+                <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
                   Live on-chain
                 </span>
               </div>

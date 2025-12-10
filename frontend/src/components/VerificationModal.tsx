@@ -72,17 +72,25 @@ export function VerificationModal({
 
       if (!response.ok) {
         let errorMessage = "Failed to prepare verification";
+
+        // Clone the response before reading it
+        const responseClone = response.clone();
+
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.details || errorMessage;
         } catch {
-          // If we can't parse JSON, use status text
-          const text = await response.text();
-          console.error(
-            "API returned non-JSON response:",
-            text.substring(0, 200)
-          );
-          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          // If JSON parsing fails, use the cloned response for text
+          try {
+            const text = await responseClone.text();
+            console.error(
+              "API returned non-JSON response:",
+              text.substring(0, 200)
+            );
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          } catch {
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          }
         }
         throw new Error(errorMessage);
       }

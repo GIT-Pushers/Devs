@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { readContract } from "thirdweb";
-import { useActiveAccount } from "thirdweb/react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -74,8 +74,6 @@ export default function ResultsPage() {
   const params = useParams();
   const router = useRouter();
   const hackathonId = params.hackathonId as string;
-  const account = useActiveAccount();
-
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
   const [rankedTeams, setRankedTeams] = useState<TeamWithScores[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +94,9 @@ export default function ResultsPage() {
         setHackathon(hackathonData);
 
         if (!hackathonData.finalized) {
-          toast.error("Results not available yet. Scores must be finalized first.");
+          toast.error(
+            "Results not available yet. Scores must be finalized first."
+          );
           return;
         }
 
@@ -159,11 +159,15 @@ export default function ResultsPage() {
           })
         );
 
-        const validTeams = teamsData.filter((t) => t !== null) as TeamWithScores[];
+        const validTeams = teamsData.filter(
+          (t) => t !== null
+        ) as TeamWithScores[];
 
         // Sort teams by ranking
         validTeams.sort((a, b) => {
-          return Number(a.registration.ranking) - Number(b.registration.ranking);
+          return (
+            Number(a.registration.ranking) - Number(b.registration.ranking)
+          );
         });
 
         setRankedTeams(validTeams);
@@ -210,8 +214,9 @@ export default function ResultsPage() {
 
   const getPrizeAmount = (rank: number) => {
     if (!hackathon) return "0";
-    const totalPrize = (hackathon.totalSponsorshipAmount * BigInt(80)) / BigInt(100);
-    
+    const totalPrize =
+      (hackathon.totalSponsorshipAmount * BigInt(80)) / BigInt(100);
+
     switch (rank) {
       case 1:
         return formatEther((totalPrize * BigInt(50)) / BigInt(100));
@@ -224,11 +229,17 @@ export default function ResultsPage() {
     }
   };
 
+  const totalPrizePool = hackathon
+    ? (hackathon.totalSponsorshipAmount * BigInt(80)) / BigInt(100)
+    : BigInt(0);
+
+  const topThree = rankedTeams.slice(0, 3);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-screen bg-[#050810]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
           <p className="text-lg text-muted-foreground">Loading results...</p>
         </div>
       </div>
@@ -237,10 +248,10 @@ export default function ResultsPage() {
 
   if (!hackathon) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-screen bg-[#050810]">
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2 text-white">Error</h2>
-          <p className="text-muted-foreground mb-6 text-lg">
+          <h2 className="mb-2 text-3xl font-bold text-foreground">Error</h2>
+          <p className="mb-6 text-lg text-muted-foreground">
             Hackathon not found
           </p>
           <Button
@@ -256,61 +267,110 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden border-b border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-7xl relative z-10">
+    <div className="relative min-h-screen overflow-hidden bg-[#050810] text-foreground">
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="absolute -left-24 top-10 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute right-[-18%] top-0 h-80 w-80 rounded-full bg-warning/12 blur-3xl" />
+        <div className="absolute bottom-[-14%] left-[15%] h-96 w-96 rounded-full bg-secondary/60 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
             onClick={() => router.push(`/home/${hackathonId}`)}
-            className="mb-8 text-muted-foreground hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
+            className="border border-border/70 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Hackathon
           </Button>
+          <span
+            className={`rounded-full border border-border/60 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
+              hackathon.finalized
+                ? "bg-success/15 text-success border-success/30"
+                : "bg-warning/15 text-warning border-warning/30"
+            }`}
+          >
+            {hackathon.finalized ? "Scores finalized" : "Pending finalization"}
+          </span>
+        </div>
 
-          <div className="flex items-start justify-between flex-wrap gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-1.5 w-16 bg-gradient-to-r from-primary to-primary/50"></div>
-                <span className="text-primary text-sm font-bold uppercase tracking-widest">
-                  Final Results
+        <div className="rounded-3xl border border-border/70 bg-secondary/60 p-6 shadow-xl backdrop-blur-lg md:p-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-3 rounded-full border border-border/70 bg-background/40 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                Final Results
+              </div>
+              <div>
+                <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">
+                  Hackathon #{hackathonId} Leaderboard
+                </h1>
+                <p className="mt-2 text-lg text-muted-foreground">
+                  Snapshot of ranked teams, prize splits, and scoring
+                  breakdowns.
+                </p>
+              </div>
+              <div className="inline-flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full bg-accent/30 px-3 py-1 text-foreground/80">
+                  {hackathon.minTeams} - {hackathon.maxTeams} teams
+                </span>
+                <span className="rounded-full bg-accent/30 px-3 py-1 text-foreground/80">
+                  Judges: {hackathon.judges.length}
+                </span>
+                <span className="rounded-full bg-accent/30 px-3 py-1 text-foreground/80">
+                  Stake: {formatEther(hackathon.stakeAmount)} ETH
                 </span>
               </div>
-              <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-6 leading-tight">
-                Leaderboard
-              </h1>
-              <p className="text-2xl text-muted-foreground mb-8">
-                Hackathon #{hackathonId} Final Rankings
-              </p>
+            </div>
 
-              {/* Prize Pool Info */}
-              <div className="bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border-2 border-primary/40 rounded-xl p-6 inline-block">
-                <p className="text-xs text-primary/90 mb-2 font-bold uppercase">
-                  Total Prize Pool (80%)
+            <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 md:w-auto md:grid-cols-4">
+              <div className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Prize pool (80%)
                 </p>
-                <p className="text-5xl font-extrabold text-white">
-                  {formatEther((hackathon.totalSponsorshipAmount * BigInt(80)) / BigInt(100))} ETH
+                <p className="text-2xl font-bold text-primary">
+                  {formatEther(totalPrizePool)} ETH
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Teams ranked
+                </p>
+                <p className="text-2xl font-bold">{rankedTeams.length}</p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Organized by
+                </p>
+                <p className="truncate text-sm font-semibold text-foreground/80">
+                  {hackathon.organizer}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Status
+                </p>
+                <p className="text-sm font-semibold text-success">
+                  {hackathon.finalized ? "Finalized" : "Pending"}
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
         {!hackathon.finalized && (
-          <Card className="mb-6 bg-gradient-to-br from-warning/20 to-warning/10 border-2 border-warning/40">
-            <CardContent className="p-6">
+          <Card className="mt-8 border border-warning/40 bg-warning/10 shadow-md">
+            <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <Trophy className="h-12 w-12 text-warning" />
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">
-                    Results Not Available
+                  <h3 className="text-lg font-bold">
+                    Results not available yet
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    The hackathon scores have not been finalized yet. Check back later.
+                    Scores must be finalized before the leaderboard is
+                    published.
                   </p>
                 </div>
               </div>
@@ -319,129 +379,228 @@ export default function ResultsPage() {
         )}
 
         {rankedTeams.length === 0 ? (
-          <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20">
-            <CardContent className="p-12 text-center">
-              <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">
-                No teams with finalized scores yet
+          <Card className="mt-10 border border-border/70 bg-secondary/60 text-center shadow-lg backdrop-blur">
+            <CardContent className="p-12">
+              <Trophy className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+              <p className="text-lg text-muted-foreground">
+                No teams with finalized scores yet.
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {rankedTeams.map((team, index) => {
-              const rank = Number(team.registration.ranking);
-              const isWinner = rank <= 3;
-
-              return (
-                <Card
-                  key={team.id.toString()}
-                  className={`bg-gradient-to-br from-card to-card/50 border-2 ${
-                    isWinner
-                      ? "border-primary/60 shadow-2xl shadow-primary/20"
-                      : "border-primary/20"
-                  } transition-all hover:scale-[1.02]`}
-                >
-                  <CardHeader className={`${isWinner ? "bg-gradient-to-br from-primary/30 via-primary/20 to-transparent" : "bg-gradient-to-br from-primary/10 via-transparent to-transparent"} border-b-2 border-primary/30`}>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className={`flex items-center justify-center w-16 h-16 rounded-xl ${getRankBadge(rank)} font-extrabold text-2xl`}>
-                          {rank <= 3 ? getRankIcon(rank) : `#${rank}`}
-                        </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-3xl text-white mb-2 flex items-center gap-3">
-                            {team.metadata?.name || `Team #${team.id.toString()}`}
-                            {rank === 1 && (
-                              <span className="px-4 py-1 bg-yellow-400/20 text-yellow-400 text-base font-semibold rounded-full border-2 border-yellow-400/40">
-                                🏆 WINNER
-                              </span>
-                            )}
-                          </CardTitle>
-                          {team.metadata?.description && (
-                            <CardDescription className="text-base mb-3">
-                              {team.metadata.description}
-                            </CardDescription>
-                          )}
-                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <Users className="h-4 w-4" />
-                            <span>{team.members.length} members</span>
+          <>
+            <div className="mt-10 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-xl font-semibold">Podium</h3>
+                <span className="text-sm text-muted-foreground">
+                  Top three teams by final score
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {topThree.map((team) => {
+                  const rank = Number(team.registration.ranking);
+                  return (
+                    <div
+                      key={team.id.toString()}
+                      className={`rounded-2xl border border-border/70 bg-secondary/70 p-5 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 ${getRankBadge(
+                        rank
+                      )}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col gap-2">
+                          <div className="inline-flex items-center gap-2 rounded-full bg-background/40 px-3 py-1 text-xs font-semibold text-foreground/80">
+                            {getRankIcon(rank)}
+                            <span>#{rank}</span>
                           </div>
+                          <h4 className="text-lg font-bold text-foreground">
+                            {team.metadata?.name ||
+                              `Team #${team.id.toString()}`}
+                          </h4>
+                          <p className="text-sm text-foreground/80">
+                            {team.metadata?.description ||
+                              "On-chain submission"}
+                          </p>
                         </div>
+                        {team.metadata?.image && (
+                          <Image
+                            src={team.metadata.image.replace(
+                              "ipfs://",
+                              "https://gateway.pinata.cloud/ipfs/"
+                            )}
+                            alt={team.metadata.name || "Team"}
+                            width={64}
+                            height={64}
+                            className="h-16 w-16 rounded-lg border border-border/60 object-cover"
+                            unoptimized
+                          />
+                        )}
                       </div>
-                      {team.metadata?.image && (
-                        <img
-                          src={team.metadata.image.replace(
-                            "ipfs://",
-                            "https://gateway.pinata.cloud/ipfs/"
-                          )}
-                          alt={team.metadata.name || "Team"}
-                          className="w-24 h-24 rounded-lg object-cover border-2 border-primary/30"
-                        />
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="bg-black/40 border-2 border-primary/20 rounded-xl p-4 text-center">
-                        <p className="text-xs text-muted-foreground mb-2 font-bold uppercase">
-                          Final Score
-                        </p>
-                        <p className="text-3xl font-extrabold text-primary">
-                          {team.registration.finalScore.toString()}
-                        </p>
-                      </div>
-                      <div className="bg-black/40 border-2 border-primary/20 rounded-xl p-4 text-center">
-                        <p className="text-xs text-muted-foreground mb-2 font-bold uppercase">
-                          Judge Score
-                        </p>
-                        <p className="text-2xl font-bold text-white">
-                          {team.registration.judgeScore.toString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          40% weight
-                        </p>
-                      </div>
-                      <div className="bg-black/40 border-2 border-primary/20 rounded-xl p-4 text-center">
-                        <p className="text-xs text-muted-foreground mb-2 font-bold uppercase">
-                          Community
-                        </p>
-                        <p className="text-2xl font-bold text-white">
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-foreground/80">
+                        <span className="rounded-full bg-background/40 px-3 py-1 font-semibold">
+                          Final {team.registration.finalScore.toString()}
+                        </span>
+                        <span className="rounded-full bg-background/40 px-3 py-1">
+                          Judges {team.registration.judgeScore.toString()}
+                        </span>
+                        <span className="rounded-full bg-background/40 px-3 py-1">
+                          Community{" "}
                           {team.registration.participantScore.toString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          35% weight
-                        </p>
+                        </span>
+                        <span className="rounded-full bg-background/40 px-3 py-1">
+                          AI {team.registration.aiScore.toString()}
+                        </span>
                       </div>
-                      <div className="bg-black/40 border-2 border-primary/20 rounded-xl p-4 text-center">
-                        <p className="text-xs text-muted-foreground mb-2 font-bold uppercase">
-                          AI Score
-                        </p>
-                        <p className="text-2xl font-bold text-white">
-                          {team.registration.aiScore.toString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          25% weight
-                        </p>
+                      <div className="mt-3 text-sm font-semibold">
+                        Prize: {getPrizeAmount(rank)} ETH
                       </div>
-                      {isWinner && (
-                        <div className="bg-gradient-to-br from-success/30 to-success/10 border-2 border-success/40 rounded-xl p-4 text-center">
-                          <p className="text-xs text-success mb-2 font-bold uppercase">
-                            Prize
-                          </p>
-                          <p className="text-2xl font-extrabold text-white">
-                            {getPrizeAmount(rank)} ETH
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {rank === 1 ? "50%" : rank === 2 ? "30%" : "20%"}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-12 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-xl font-semibold">Full leaderboard</h3>
+                <span className="text-sm text-muted-foreground">
+                  Includes score breakdown and prizes
+                </span>
+              </div>
+              <div className="space-y-5">
+                {rankedTeams.map((team) => {
+                  const rank = Number(team.registration.ranking);
+                  const isWinner = rank <= 3;
+
+                  return (
+                    <Card
+                      key={team.id.toString()}
+                      className={`border border-border/70 bg-secondary/60 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 ${
+                        isWinner ? "shadow-primary/20" : ""
+                      }`}
+                    >
+                      <CardHeader className="border-b border-border/60 pb-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex gap-4">
+                            <div
+                              className={`flex h-14 w-14 items-center justify-center rounded-xl text-xl font-extrabold ${getRankBadge(
+                                rank
+                              )}`}
+                            >
+                              {rank <= 3 ? getRankIcon(rank) : `#${rank}`}
+                            </div>
+                            <div className="space-y-1">
+                              <CardTitle className="flex items-center gap-2 text-2xl">
+                                {team.metadata?.name ||
+                                  `Team #${team.id.toString()}`}
+                                {rank === 1 && (
+                                  <span className="rounded-full bg-success/20 px-3 py-1 text-xs font-semibold text-success">
+                                    Winner
+                                  </span>
+                                )}
+                              </CardTitle>
+                              {team.metadata?.description && (
+                                <CardDescription className="text-sm text-muted-foreground">
+                                  {team.metadata.description}
+                                </CardDescription>
+                              )}
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Users className="h-4 w-4" />
+                                <span>{team.members.length} members</span>
+                              </div>
+                            </div>
+                          </div>
+                          {team.metadata?.image && (
+                            <Image
+                              src={team.metadata.image.replace(
+                                "ipfs://",
+                                "https://gateway.pinata.cloud/ipfs/"
+                              )}
+                              alt={team.metadata.name || "Team"}
+                              width={80}
+                              height={80}
+                              className="h-20 w-20 rounded-lg border border-border/60 object-cover"
+                              unoptimized
+                            />
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4 text-center">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                              Final Score
+                            </p>
+                            <p className="text-3xl font-extrabold text-primary">
+                              {team.registration.finalScore.toString()}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4 text-center">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                              Judge
+                            </p>
+                            <p className="text-2xl font-bold">
+                              {team.registration.judgeScore.toString()}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              40% weight
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4 text-center">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                              Community
+                            </p>
+                            <p className="text-2xl font-bold">
+                              {team.registration.participantScore.toString()}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              35% weight
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-background/40 p-4 text-center">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                              AI
+                            </p>
+                            <p className="text-2xl font-bold">
+                              {team.registration.aiScore.toString()}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              25% weight
+                            </p>
+                          </div>
+                          {isWinner ? (
+                            <div className="rounded-xl border border-success/50 bg-success/10 p-4 text-center shadow-sm">
+                              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-success">
+                                Prize
+                              </p>
+                              <p className="text-2xl font-extrabold">
+                                {getPrizeAmount(rank)} ETH
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {rank === 1
+                                  ? "50%"
+                                  : rank === 2
+                                  ? "30%"
+                                  : "20%"}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-border/60 bg-background/40 p-4 text-center">
+                              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                Prize
+                              </p>
+                              <p className="text-lg font-semibold text-muted-foreground">
+                                N/A
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

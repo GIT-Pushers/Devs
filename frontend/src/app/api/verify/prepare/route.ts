@@ -1,54 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createThirdwebClient } from 'thirdweb';
-import { sepolia } from 'thirdweb/chains';
-import { getContract, readContract } from 'thirdweb';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createThirdwebClient } from "thirdweb";
+import { defineChain } from "thirdweb/chains";
+import { getContract, readContract } from "thirdweb";
 
+// Use secretKey for server-side API routes
 const client = createThirdwebClient({
-  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID!,
+  secretKey: process.env.THIRDWEB_SECRET_KEY as string,
+});
+
+// Define Sepolia chain with public RPC
+const sepolia = defineChain({
+  id: 11155111,
+  rpc: "https://eth-sepolia.g.alchemy.com/v2/demo",
 });
 
 const githubVerifierContract = getContract({
   client,
   chain: sepolia,
-  address: '0x62F7448dd19DF9059B55F4fE670c41021D002fEf',
+  address: "0x62F7448dd19DF9059B55F4fE670c41021D002fEf",
 });
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔷 Prepare verification started');
+    console.log("🔷 Prepare verification started");
     const { walletAddress } = await request.json();
-    console.log('📍 Wallet address:', walletAddress);
-    
+    console.log("📍 Wallet address:", walletAddress);
+
     if (!walletAddress) {
-      return NextResponse.json({ error: 'Wallet address required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Wallet address required" },
+        { status: 400 }
+      );
     }
 
     // Get GitHub user from cookie
     const cookieStore = await cookies();
-    const githubUserCookie = cookieStore.get('github_user');
-    
-    console.log('🍪 GitHub cookie exists:', !!githubUserCookie);
-    
+    const githubUserCookie = cookieStore.get("github_user");
+
+    console.log("🍪 GitHub cookie exists:", !!githubUserCookie);
+
     if (!githubUserCookie) {
-      return NextResponse.json({ error: 'No GitHub session found' }, { status: 401 });
+      return NextResponse.json(
+        { error: "No GitHub session found" },
+        { status: 401 }
+      );
     }
 
     const githubUser = JSON.parse(githubUserCookie.value);
-    console.log('👤 GitHub user:', githubUser.login);
+    console.log("👤 GitHub user:", githubUser.login);
 
     // Get the current nonce from the contract
-    console.log('📞 Calling contract to get nonce...');
+    console.log("📞 Calling contract to get nonce...");
     let nonce;
     try {
       nonce = await readContract({
         contract: githubVerifierContract,
-        method: 'function getNonce(address user) view returns (uint256)',
+        method: "function getNonce(address user) view returns (uint256)",
         params: [walletAddress as `0x${string}`],
       });
-      console.log('✅ Nonce received:', nonce.toString());
+      console.log("✅ Nonce received:", nonce.toString());
     } catch (contractError) {
-      console.error('❌ Contract error:', contractError);
+      console.error("❌ Contract error:", contractError);
       throw new Error(`Contract call failed: ${contractError}`);
     }
 
@@ -64,15 +77,19 @@ export async function POST(request: NextRequest) {
       expiresAt,
     };
 
-    cookieStore.set('verification_session', JSON.stringify(verificationSession), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600,
-      path: '/',
-    });
+    cookieStore.set(
+      "verification_session",
+      JSON.stringify(verificationSession),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 600,
+        path: "/",
+      }
+    );
 
-    console.log('✅ Prepare verification completed successfully');
+    console.log("✅ Prepare verification completed successfully");
     return NextResponse.json({
       githubUser,
       nonce: nonce.toString(),
@@ -80,11 +97,14 @@ export async function POST(request: NextRequest) {
       chainId: 11155111, // Sepolia
     });
   } catch (error: any) {
-    console.error('❌ Prepare verification error:', error);
-    console.error('❌ Error stack:', error.stack);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error.message 
-    }, { status: 500 });
+    console.error("❌ Prepare verification error:", error);
+    console.error("❌ Error stack:", error.stack);
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
