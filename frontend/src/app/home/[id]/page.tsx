@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { readContract } from "thirdweb";
-import { mainContract } from "../../../../constants/contracts";
+
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ import {
   Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { mainContract } from "@/constants/contracts";
 
 interface Hackathon {
   id: bigint;
@@ -135,10 +136,10 @@ export default function HackathonDetailPage() {
         color: "text-green-400",
         bgColor: "bg-green-500/20 border-green-500/30",
       };
-    return { 
-      status: "Ended", 
-      color: "text-muted-foreground", 
-      bgColor: "bg-muted/20 border-border" 
+    return {
+      status: "Ended",
+      color: "text-muted-foreground",
+      bgColor: "bg-muted/20 border-border",
     };
   };
 
@@ -182,7 +183,9 @@ export default function HackathonDetailPage() {
   );
   const hackathonStatus = getTimeStatus(hackathon.hackStart, hackathon.hackEnd);
 
-  const isActive = Number(hackathon.hackStart) * 1000 <= Date.now() && Number(hackathon.hackEnd) * 1000 >= Date.now();
+  const isActive =
+    Number(hackathon.hackStart) * 1000 <= Date.now() &&
+    Number(hackathon.hackEnd) * 1000 >= Date.now();
 
   return (
     <div className="min-h-screen bg-black">
@@ -213,20 +216,32 @@ export default function HackathonDetailPage() {
               <p className="text-2xl text-muted-foreground mb-8">
                 Complete information and statistics
               </p>
-              
+
               {/* Quick Stats Row */}
               <div className="flex flex-wrap gap-4">
                 <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Prize Pool</p>
-                  <p className="text-2xl font-bold text-white">{formatEther(hackathon.totalSponsorshipAmount)} ETH</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    Prize Pool
+                  </p>
+                  <p className="text-2xl font-bold text-white">
+                    {formatEther(hackathon.totalSponsorshipAmount)} ETH
+                  </p>
                 </div>
                 <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Teams</p>
-                  <p className="text-2xl font-bold text-white">{hackathon.minTeams} - {hackathon.maxTeams}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    Teams
+                  </p>
+                  <p className="text-2xl font-bold text-white">
+                    {hackathon.minTeams} - {hackathon.maxTeams}
+                  </p>
                 </div>
                 <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Stake</p>
-                  <p className="text-2xl font-bold text-white">{formatEther(hackathon.stakeAmount)} ETH</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    Stake
+                  </p>
+                  <p className="text-2xl font-bold text-white">
+                    {formatEther(hackathon.stakeAmount)} ETH
+                  </p>
                 </div>
               </div>
             </div>
@@ -247,7 +262,6 @@ export default function HackathonDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl overflow-hidden">
-
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
@@ -399,13 +413,9 @@ export default function HackathonDetailPage() {
                     </p>
                     <p className="text-2xl font-extrabold">
                       {hackathon.creationFeeRefunded ? (
-                        <span className="text-green-400">
-                          ✓ Refunded
-                        </span>
+                        <span className="text-green-400">✓ Refunded</span>
                       ) : (
-                        <span className="text-primary">
-                          ⏳ Pending
-                        </span>
+                        <span className="text-primary">⏳ Pending</span>
                       )}
                     </p>
                   </div>
@@ -419,8 +429,12 @@ export default function HackathonDetailPage() {
             {/* Sponsorship Stats */}
             <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 hover:border-primary/40 transition-all shadow-xl shadow-primary/5 overflow-hidden">
               <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
-                <CardTitle className="text-white text-xl">Sponsorship</CardTitle>
-                <CardDescription className="text-muted-foreground">Funding details</CardDescription>
+                <CardTitle className="text-white text-xl">
+                  Sponsorship
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Funding details
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 <div className="p-6 rounded-xl bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 border-2 border-primary/40 shadow-lg shadow-primary/20">
@@ -474,7 +488,9 @@ export default function HackathonDetailPage() {
                   </div>
                   Teams
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">Participation limits</CardDescription>
+                <CardDescription className="text-muted-foreground">
+                  Participation limits
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -515,29 +531,45 @@ export default function HackathonDetailPage() {
                 <CardTitle className="text-white text-xl">Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-6">
-                <Button 
+                <Button
                   onClick={() => router.push("/CreateTeam")}
                   className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-base shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
                 >
                   <UserPlus className="mr-2 h-5 w-5" />
                   Create Team
                 </Button>
-                <Button 
+                <Button
                   onClick={() => router.push("/jointeam")}
-                  variant="outline" 
+                  variant="outline"
                   className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
                 >
                   <Key className="mr-2 h-5 w-5" />
                   Join Team
                 </Button>
-                <Button 
-                 
-                 onClick={() => router.push("/sponsor")}
-                 variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer">
+                <Button
+                  onClick={() =>
+                    router.push(`/sponsor/${hackathon.id.toString()}`)
+                  }
+                  variant="outline"
+                  className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
+                >
                   <Coins className="mr-2 h-5 w-5" />
                   Sponsor Hackathon
                 </Button>
-                <Button variant="outline" className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer">
+                <Button
+                  onClick={() =>
+                    router.push(`/sponsors/${hackathon.id.toString()}`)
+                  }
+                  variant="outline"
+                  className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
+                >
+                  <Trophy className="mr-2 h-5 w-5" />
+                  View Sponsors
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 font-bold py-6 text-base cursor-pointer"
+                >
                   <Users className="mr-2 h-5 w-5" />
                   View Participants
                 </Button>
