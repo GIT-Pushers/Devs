@@ -1,33 +1,39 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useActiveAccount } from "thirdweb/react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Users, Key, CheckCircle2 } from "lucide-react"
+import { Users, Key, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react"
+import { useTeamManagement } from "@/hooks/useTeamManagement"
+import WalletConnectionButton from "@/components/WalletConnectionButton"
 
 type Team = {
   id: number
   name: string
   members: string[]
-}
-
-function IconCheck({ className = "" }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  )
+  txHash?: string
 }
 
 function JoinTeamForm({ onJoin }: { onJoin: (team: Team) => void }) {
   const [teamId, setTeamId] = useState<string>("")
   const [joinCode, setJoinCode] = useState<string>("")
   const [status, setStatus] = useState<{ state: "idle" | "loading" | "success" | "error"; message?: string }>({ state: "idle" })
+  
+  const router = useRouter()
+  const account = useActiveAccount()
+  const { joinTeam, isLoading, error: contractError } = useTeamManagement()
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus({ state: "idle" })
+
+    if (!account) {
+      setStatus({ state: "error", message: "Please connect your wallet first" })
+      return
+    }
 
     if (!teamId.trim() || !joinCode.trim()) {
       setStatus({ state: "error", message: "Please fill both Team ID and Join Code." })
@@ -40,18 +46,72 @@ function JoinTeamForm({ onJoin }: { onJoin: (team: Team) => void }) {
       return
     }
 
-    // optimistic loading
-    setStatus({ state: "loading", message: "Joining team…" })
+    if (joinCode.length < 8) {
+      setStatus({ state: "error", message: "Join code must be at least 8 characters." })
+      return
+    }
 
-    // fake API
-    setTimeout(() => {
-      // demo validation — accept any join code but show nice success
-      const team: Team = { id: idNum, name: `Team ${idNum}`, members: ["you"] }
-      setStatus({ state: "success", message: `Joined ${team.name}` })
+    setStatus({ state: "loading", message: "Joining team on blockchain…" })
+
+    try {
+      const result = await joinTeam(idNum, joinCode)
+      console.log('Joined team:', result)
+      
+      const team: Team = { 
+        id: idNum, 
+        name: `Team ${idNum}`, 
+        members: [account.address],
+        txHash: result.transactionHash
+      }
+      
+      setStatus({ state: "success", message: `Successfully joined Team ${idNum}!` })
       onJoin(team)
-    }, 700)
-}
-    
+    } catch (err: any) {
+      console.error('Join team error:', err)
+      
+      // Handle specific contract errors
+      let errorMessage = "Failed to join team. Please check your Team ID and Join Code."
+      
+      if (err.message?.includes("Already a member")) {
+        errorMessage = "You are already a member of this team!"
+      } else if (err.message?.includes("Invalid join code")) {
+        errorMessage = "Invalid join code. Please check and try again."
+      } else if (err.message?.includes("Team does not exist")) {
+        errorMessage = "Team not found. Please check the Team ID."
+      } else if (err.message?.includes("Team is full")) {
+        errorMessage = "This team is full and cannot accept new members."
+      } else if (err.message) {
+        // Extract readable error from contract error message
+        const match = err.message.match(/Error - (.+?)(?:\n|$|contract:)/)
+        if (match) {
+          errorMessage = match[1].trim()
+        }
+      }
+      
+      setStatus({ state: "error", message: errorMessage })
+    }
+  }
+  
+  // Show wallet connection prompt if not connected
+  if (!account) {
+    return (
+      <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-primary/30">
+            <ShieldCheck className="w-8 h-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-white text-center">Connect Your Wallet</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 text-center">
+          <p className="text-muted-foreground mb-6">
+            You need to connect your wallet to join a team on the blockchain.
+          </p>
+          <WalletConnectionButton />
+        </CardContent>
+      </Card>
+    )
+  }
+
 return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-2 border-primary/20 shadow-xl shadow-primary/5 max-w-xl overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border-b-2 border-primary/30">
@@ -61,7 +121,7 @@ return (
           </div>
           Join an existing team
         </CardTitle>
-        <p className="text-muted-foreground mt-2 text-sm">Have a team ID and join code? Enter them below to join instantly.</p>
+        <p className="text-muted-foreground mt-2 text-sm">Have a team ID and join code? Enter them below to join on the blockchain.</p>
       </CardHeader>
 
       <CardContent className="pt-6">
@@ -74,9 +134,10 @@ return (
                 pattern="\d*"
                 value={teamId}
                 onChange={(e) => setTeamId(e.target.value)}
-                placeholder="e.g. 101"
+                placeholder="e.g. 1"
                 className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
                 aria-label="Team ID"
+                disabled={status.state === "loading" || isLoading}
                 required
               />
             </label>
@@ -84,11 +145,13 @@ return (
             <label className="flex flex-col">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Join Code</span>
               <Input
+                type="password"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
-                placeholder="Enter team code"
+                placeholder="8+ characters"
                 className="bg-black/40 border-2 border-primary/20 text-white placeholder:text-muted-foreground focus:border-primary/50"
                 aria-label="Join Code"
+                disabled={status.state === "loading" || isLoading}
                 required
               />
             </label>
@@ -97,10 +160,11 @@ return (
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               type="submit"
-              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/30 border-2 border-primary/40 cursor-pointer"
+              className="bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/30 border-2 border-primary/40"
+              disabled={status.state === "loading" || isLoading}
               aria-live="polite"
             >
-              {status.state === "loading" ? (
+              {status.state === "loading" || isLoading ? (
                 <>
                   <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none"></circle>
@@ -112,18 +176,14 @@ return (
                 <span>Join Team</span>
               )}
             </Button>
-
-            <div className="ml-auto text-sm text-muted-foreground">
-              <span className="inline-block align-middle">Demo code:</span>{" "}
-              <code className="bg-primary/20 text-primary border border-primary/30 px-2 py-1 rounded text-xs font-mono ml-2">JOINME</code>
-            </div>
           </div>
 
           {/* Status messages */}
           <div className="min-h-[1.6rem]">
-            {status.state === "error" && (
-              <div className="text-sm text-destructive font-medium p-3 bg-destructive/20 border border-destructive/30 rounded-lg">
-                {status.message}
+            {(status.state === "error" || contractError) && (
+              <div className="flex items-center gap-3 p-3 bg-destructive/20 border border-destructive/30 rounded-lg text-destructive">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p className="text-sm font-medium">{status.message || contractError}</p>
               </div>
             )}
             {status.state === "success" && (
