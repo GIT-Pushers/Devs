@@ -20,7 +20,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 z-50">
             <span className="text-2xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              GLYTCH
+              Hackathon Platform
             </span>
           </Link>
 
