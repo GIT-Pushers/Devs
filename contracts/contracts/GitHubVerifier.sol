@@ -3,21 +3,23 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "./interfaces/IGLYTCHStructs.sol";
+import "./interfaces/IHackathonStructs.sol";
 
 /**
  * @title GitHubVerifier
  * @notice Handles GitHub account verification and linking to wallet addresses using EIP-712
  * @dev Uses EIP-712 typed structured data hashing and signing
  */
-contract GitHubVerifier is EIP712, IGLYTCHStructs {
+contract GitHubVerifier is EIP712, IHackathonStructs {
     using ECDSA for bytes32;
 
     // ============ Constants ============
-    
-    bytes32 public constant GITHUB_BINDING_TYPEHASH = 
-        keccak256("GitHubBinding(string githubId,string githubUsername,address walletAddress,uint256 nonce,uint256 timestamp)");
-    
+
+    bytes32 public constant GITHUB_BINDING_TYPEHASH =
+        keccak256(
+            "GitHubBinding(string githubId,string githubUsername,address walletAddress,uint256 nonce,uint256 timestamp)"
+        );
+
     uint256 public constant SIGNATURE_EXPIRY = 600; // 10 minutes
 
     // ============ State Variables ============
@@ -28,7 +30,7 @@ contract GitHubVerifier is EIP712, IGLYTCHStructs {
 
     // ============ Constructor ============
 
-    constructor() EIP712("GLYTCH", "1") {}
+    constructor() EIP712("HackathonPlatform", "1") {}
 
     // ============ External Functions ============
 
@@ -48,22 +50,30 @@ contract GitHubVerifier is EIP712, IGLYTCHStructs {
         bytes calldata signature
     ) external {
         require(nonce == nonces[msg.sender], "Invalid nonce");
-        require(block.timestamp - timestamp < SIGNATURE_EXPIRY, "Signature expired");
+        require(
+            block.timestamp - timestamp < SIGNATURE_EXPIRY,
+            "Signature expired"
+        );
         require(!githubBindings[msg.sender].verified, "Already verified");
-        require(githubIdToAddress[githubId] == address(0), "GitHub already linked");
+        require(
+            githubIdToAddress[githubId] == address(0),
+            "GitHub already linked"
+        );
 
-        bytes32 structHash = keccak256(abi.encode(
-            GITHUB_BINDING_TYPEHASH,
-            keccak256(bytes(githubId)),
-            keccak256(bytes(githubUsername)),
-            msg.sender,
-            nonce,
-            timestamp
-        ));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                GITHUB_BINDING_TYPEHASH,
+                keccak256(bytes(githubId)),
+                keccak256(bytes(githubUsername)),
+                msg.sender,
+                nonce,
+                timestamp
+            )
+        );
 
         bytes32 digest = _hashTypedDataV4(structHash);
         address signer = digest.recover(signature);
-        
+
         require(signer == msg.sender, "Invalid signature");
 
         githubBindings[msg.sender] = GitHubBinding({
@@ -102,7 +112,9 @@ contract GitHubVerifier is EIP712, IGLYTCHStructs {
      * @param user The address to check
      * @return The GitHub binding
      */
-    function getGitHubBinding(address user) external view returns (GitHubBinding memory) {
+    function getGitHubBinding(
+        address user
+    ) external view returns (GitHubBinding memory) {
         return githubBindings[user];
     }
 
@@ -111,7 +123,9 @@ contract GitHubVerifier is EIP712, IGLYTCHStructs {
      * @param githubId The GitHub ID
      * @return The linked wallet address
      */
-    function getWalletByGitHubId(string calldata githubId) external view returns (address) {
+    function getWalletByGitHubId(
+        string calldata githubId
+    ) external view returns (address) {
         return githubIdToAddress[githubId];
     }
 }

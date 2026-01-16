@@ -5,18 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title GLYTCHVotingToken
+ * @title HackathonVotingToken
  * @notice Non-transferable ERC20 token for hackathon voting
  * @dev Soulbound token - can only be minted and burned, not transferred
  */
-contract GLYTCHVotingToken is ERC20, Ownable {
-    
+contract HackathonVotingToken is ERC20, Ownable {
     // ============ Constructor ============
-    
-    constructor(string memory name, string memory symbol) 
-        ERC20(name, symbol) 
-        Ownable(msg.sender) 
-    {}
+
+    constructor(
+        string memory name,
+        string memory symbol
+    ) ERC20(name, symbol) Ownable(msg.sender) {}
 
     // ============ External Functions ============
 
@@ -48,7 +47,11 @@ contract GLYTCHVotingToken is ERC20, Ownable {
         revert("Transfer disabled: soulbound token");
     }
 
-    function transferFrom(address, address, uint256) public pure override returns (bool) {
+    function transferFrom(
+        address,
+        address,
+        uint256
+    ) public pure override returns (bool) {
         revert("Transfer disabled: soulbound token");
     }
 }

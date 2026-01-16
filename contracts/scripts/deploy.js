@@ -1,11 +1,14 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log(" Starting GLYTCH Platform deployment...\n");
+  console.log(" Starting Hackathon Platform deployment...\n");
 
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
-  console.log("Account balance:", (await hre.ethers.provider.getBalance(deployer.address)).toString());
+  console.log(
+    "Account balance:",
+    (await hre.ethers.provider.getBalance(deployer.address)).toString()
+  );
   console.log("");
 
   // Deploy GitHubVerifier
@@ -17,13 +20,18 @@ async function main() {
   console.log(" GitHubVerifier deployed to:", githubVerifierAddress);
   console.log("");
 
-  // Deploy GLYTCHParticipationNFT
-  console.log(" Deploying GLYTCHParticipationNFT...");
-  const ParticipationNFT = await hre.ethers.getContractFactory("GLYTCHParticipationNFT");
+  // Deploy HackathonParticipationNFT
+  console.log(" Deploying HackathonParticipationNFT...");
+  const ParticipationNFT = await hre.ethers.getContractFactory(
+    "HackathonParticipationNFT"
+  );
   const participationNFT = await ParticipationNFT.deploy();
   await participationNFT.waitForDeployment();
   const participationNFTAddress = await participationNFT.getAddress();
-  console.log(" GLYTCHParticipationNFT deployed to:", participationNFTAddress);
+  console.log(
+    " HackathonParticipationNFT deployed to:",
+    participationNFTAddress
+  );
   console.log("");
 
   // Set platform treasury (you can change this to your desired address)
@@ -31,22 +39,29 @@ async function main() {
   console.log(" Platform Treasury:", platformTreasury);
   console.log("");
 
-  // Deploy GLYTCHCore
-  console.log(" Deploying GLYTCHCore...");
-  const GLYTCHCore = await hre.ethers.getContractFactory("GLYTCHCore");
-  const glytchCore = await GLYTCHCore.deploy(
+  // Deploy HackathonPlatformCore
+  console.log(" Deploying HackathonPlatformCore...");
+  const HackathonPlatformCore = await hre.ethers.getContractFactory(
+    "HackathonPlatformCore"
+  );
+  const hackathonPlatformCore = await HackathonPlatformCore.deploy(
     platformTreasury,
     githubVerifierAddress,
     participationNFTAddress
   );
-  await glytchCore.waitForDeployment();
-  const glytchCoreAddress = await glytchCore.getAddress();
-  console.log("GLYTCHCore deployed to:", glytchCoreAddress);
+  await hackathonPlatformCore.waitForDeployment();
+  const hackathonPlatformCoreAddress = await hackathonPlatformCore.getAddress();
+  console.log(
+    "HackathonPlatformCore deployed to:",
+    hackathonPlatformCoreAddress
+  );
   console.log("");
 
-  // Set GLYTCHCore as NFT minter
-  console.log(" Setting GLYTCHCore as NFT minter...");
-  const tx = await participationNFT.setGLYTCHCore(glytchCoreAddress);
+  // Set HackathonPlatformCore as NFT minter
+  console.log(" Setting HackathonPlatformCore as NFT minter...");
+  const tx = await participationNFT.setHackathonPlatformCore(
+    hackathonPlatformCoreAddress
+  );
   await tx.wait();
   console.log(" NFT minter configured");
   console.log("");
@@ -73,7 +88,7 @@ async function main() {
     githubVerifier: githubVerifierAddress,
     participationNFT: participationNFTAddress,
     glytchCore: glytchCoreAddress,
-    platformTreasury: platformTreasury
+    platformTreasury: platformTreasury,
   };
 }
 

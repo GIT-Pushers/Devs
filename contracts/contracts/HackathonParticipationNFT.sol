@@ -3,38 +3,42 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IGLYTCHStructs.sol";
+import "./interfaces/IHackathonStructs.sol";
 
 /**
- * @title GLYTCHParticipationNFT
+ * @title HackathonParticipationNFT
  * @notice NFT representing hackathon participation with final scores and rankings
  * @dev Minted after hackathon completion with full metadata
  */
-contract GLYTCHParticipationNFT is ERC721URIStorage, Ownable, IGLYTCHStructs {
-    
+contract HackathonParticipationNFT is
+    ERC721URIStorage,
+    Ownable,
+    IHackathonStructs
+{
     // ============ State Variables ============
-    
-    uint256 private _tokenIdCounter;
-    address public glytchCore;
 
-    mapping(uint256 => mapping(uint256 => mapping(address => bool))) public minted; // hackathonId => teamId => user => minted
+    uint256 private _tokenIdCounter;
+    address public hackathonPlatformCore;
+
+    mapping(uint256 => mapping(uint256 => mapping(address => bool)))
+        public minted; // hackathonId => teamId => user => minted
 
     // ============ Constructor ============
 
-    constructor() 
-        ERC721("GLYTCH Participation", "GPART") 
-        Ownable(msg.sender) 
+    constructor()
+        ERC721("Hackathon Participation", "HPART")
+        Ownable(msg.sender)
     {}
 
     // ============ Admin Functions ============
 
     /**
-     * @notice Set the GLYTCH Core contract address
+     * @notice Set the Hackathon Platform Core contract address
      * @param _core Address of the core contract
      */
-    function setGLYTCHCore(address _core) external onlyOwner {
+    function setHackathonPlatformCore(address _core) external onlyOwner {
         require(_core != address(0), "Invalid core address");
-        glytchCore = _core;
+        hackathonPlatformCore = _core;
     }
 
     // ============ External Functions ============
@@ -53,11 +57,11 @@ contract GLYTCHParticipationNFT is ERC721URIStorage, Ownable, IGLYTCHStructs {
         address participant,
         string calldata tokenURI
     ) external returns (uint256) {
-        require(msg.sender == glytchCore, "Only GLYTCH Core");
+        require(msg.sender == hackathonPlatformCore, "Only Hackathon Platform Core");
         require(!minted[hackathonId][teamId][participant], "Already minted");
 
         uint256 tokenId = _tokenIdCounter++;
-        
+
         _mint(participant, tokenId);
         _setTokenURI(tokenId, tokenURI);
 

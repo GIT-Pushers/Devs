@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-This implementation adds GitHub OAuth verification with EIP-712 signatures and team management to your GLYTCH platform.
+This implementation adds GitHub OAuth verification with EIP-712 signatures and team management to your Hackathon Platform.
 
 ## 📁 Files Created
 
@@ -97,7 +97,7 @@ NEXT_PUBLIC_GITHUB_CLIENT_ID=Ov23liCkXZseCFrUikRp
 ## 📋 Contract Addresses (Sepolia)
 
 ```typescript
-GLYTCH_CORE: "0x1e483933e7e95Fbe51A579060b0F648Cd3f6ABc2"
+HACKATHON_PLATFORM_CORE: "0x1e483933e7e95Fbe51A579060b0F648Cd3f6ABc2"
 GITHUB_VERIFIER: "0x62F7448dd19DF9059B55F4fE670c41021D002fEf"
 PARTICIPATION_NFT: "0x7ef4c37f227195d121CB5D4e8972D003052A49aD"
 ```

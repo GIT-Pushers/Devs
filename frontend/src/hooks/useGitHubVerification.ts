@@ -66,7 +66,7 @@ export function useGitHubVerification() {
     try {
       // Sign EIP-712 message
       const domain = {
-        name: 'GLYTCH',
+        name: 'HackathonPlatform',
         version: '1',
         chainId: verificationData.chainId,
         verifyingContract: '0x62F7448dd19DF9059B55F4fE670c41021D002fEf' as `0x${string}`,

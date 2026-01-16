@@ -118,7 +118,7 @@ export function VerificationModal({
 
       // EIP-712 domain and types
       const domain = {
-        name: "GLYTCH",
+        name: "HackathonPlatform",
         version: "1",
         chainId: 11155111,
         verifyingContract:

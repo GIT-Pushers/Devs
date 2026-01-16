@@ -4,16 +4,16 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./GitHubVerifier.sol";
-import "./GLYTCHVotingToken.sol";
-import "./GLYTCHParticipationNFT.sol";
-import "./interfaces/IGLYTCHStructs.sol";
+import "./HackathonVotingToken.sol";
+import "./HackathonParticipationNFT.sol";
+import "./interfaces/IHackathonStructs.sol";
 
 /**
- * @title GLYTCHCore
+ * @title HackathonPlatformCore
  * @notice Main contract for decentralized hackathon platform
  * @dev Manages hackathon lifecycle, teams, submissions, judging, and rewards
  */
-contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
+contract HackathonPlatformCore is Ownable, ReentrancyGuard, IHackathonStructs {
     // ============ Constants ============
 
     uint256 public constant MIN_CREATION_FEE = 0.02 ether;
@@ -36,7 +36,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
     address public platformTreasury;
     GitHubVerifier public githubVerifier;
-    GLYTCHParticipationNFT public participationNFT;
+    HackathonParticipationNFT public participationNFT;
 
     uint256 public hackathonCount;
     uint256 public nextTeamId;
@@ -51,7 +51,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
     mapping(uint256 => uint256[]) public hackathonTeams; // hackathonId => teamIds[]
 
     // Voting tokens per hackathon
-    mapping(uint256 => GLYTCHVotingToken) public hackathonVotingToken;
+    mapping(uint256 => HackathonVotingToken) public hackathonVotingToken;
 
     // Judge scores
     mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
@@ -77,7 +77,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
         platformTreasury = _platformTreasury;
         githubVerifier = GitHubVerifier(_githubVerifier);
-        participationNFT = GLYTCHParticipationNFT(_participationNFT);
+        participationNFT = HackathonParticipationNFT(_participationNFT);
     }
 
     // ============ Hackathon Management ============
@@ -144,12 +144,12 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
         // Create voting token for this hackathon
         string memory tokenName = string(
-            abi.encodePacked("GLYTCH Vote #", _toString(id))
+            abi.encodePacked("Hackathon Vote #", _toString(id))
         );
         string memory tokenSymbol = string(
-            abi.encodePacked("GVOTE", _toString(id))
+            abi.encodePacked("HVOTE", _toString(id))
         );
-        hackathonVotingToken[id] = new GLYTCHVotingToken(
+        hackathonVotingToken[id] = new HackathonVotingToken(
             tokenName,
             tokenSymbol
         );
@@ -343,7 +343,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
         require(!reg.tokensMinted, "Tokens already minted");
 
         Team storage team = teams[teamId];
-        GLYTCHVotingToken token = hackathonVotingToken[hackathonId];
+        HackathonVotingToken token = hackathonVotingToken[hackathonId];
 
         for (uint256 i = 0; i < team.members.length; i++) {
             token.mint(team.members[i], TOKENS_PER_PARTICIPANT);
@@ -461,7 +461,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
             );
         }
 
-        GLYTCHVotingToken token = hackathonVotingToken[hackathonId];
+        HackathonVotingToken token = hackathonVotingToken[hackathonId];
         require(token.balanceOf(msg.sender) >= amount, "Insufficient tokens");
 
         token.burnFrom(msg.sender, amount);
@@ -905,7 +905,7 @@ contract GLYTCHCore is Ownable, ReentrancyGuard, IGLYTCHStructs {
 
     function updateParticipationNFT(address newNFT) external onlyOwner {
         require(newNFT != address(0), "Invalid address");
-        participationNFT = GLYTCHParticipationNFT(newNFT);
+        participationNFT = HackathonParticipationNFT(newNFT);
     }
 
     // ============ View Functions ============
